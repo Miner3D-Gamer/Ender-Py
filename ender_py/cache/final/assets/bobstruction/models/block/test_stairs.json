@@ -1,0 +1,10 @@
+{
+    "parent": "block/stairs",
+    "textures": {
+      "particle": "bobstruction:block/test_planks",
+      "bottom": "bobstruction:block/test_planks",
+      "top": "bobstruction:block/test_planks",
+      "side": "bobstruction:block/test_planks"
+    },
+    "render_type": "solid"
+  }

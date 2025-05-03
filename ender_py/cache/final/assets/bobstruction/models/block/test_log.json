@@ -1,0 +1,13 @@
+{
+    "parent": "minecraft:block/cube",
+    "textures": {
+        "up": "bobstruction:block/test_log_end",
+        "down": "bobstruction:block/test_log_end",
+        "north": "bobstruction:block/test_log_side",
+        "east": "bobstruction:block/test_log_side",
+        "south": "bobstruction:block/test_log_side",
+        "west": "bobstruction:block/test_log_side",
+        "particle": "bobstruction:block/test_log_end"
+    },
+    "render_type": "minecraft:solid"
+}

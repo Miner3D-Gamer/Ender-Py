@@ -40,7 +40,7 @@ bobstruction.add_component(
     id="creat",
 )
 
-pro_str = ender_py.shared.get_file_contents("generation_lib/strip_wood.json")
+pro_str = ender_py.shared.get_file_contents("ender_py/strip_wood.json")
 bobstruction.add_component(
     component=ender_py.components.Procedure(
         event="block_right_click",
@@ -52,18 +52,18 @@ bobstruction.add_component(
 
 bobstruction.generate()
 
-# out = generation_lib.export_mod(bobstruction)
+# out = ender_py.export_mod(bobstruction)
 # with open("mod1.json", "w") as f:
-#     json.dump(out, f, indent=4, default=generation_lib.shared.dynamic_serializer)
-# some = generation_lib.import_mod(out, "../mods/all")
-# out = generation_lib.export_mod(some)
+#     json.dump(out, f, indent=4, default=ender_py.shared.dynamic_serializer)
+# some = ender_py.import_mod(out, "../mods/all")
+# out = ender_py.export_mod(some)
 # with open("mod2.json", "w") as f:
-#     json.dump(out, f, indent=4, default=generation_lib.shared.dynamic_serializer)
+#     json.dump(out, f, indent=4, default=ender_py.shared.dynamic_serializer)
 
 
 # bobstruction.add_component(
 #     id="bobstruction",
-#     component=generation_lib.CreativeTab(
+#     component=ender_py.CreativeTab(
 #         name="Bobstruction",
 #         icon_item="minecraft:diamond",
 #         items=list(set),
@@ -75,10 +75,10 @@ bobstruction.generate()
 
 
 # bobstruction.add_component(
-#     id="test_item_i_believe", component=generation_lib.Item(name="Test Item", texture="sapphire")
+#     id="test_item_i_believe", component=ender_py.Item(name="Test Item", texture="sapphire")
 # )
 # print(str(bobstruction.export()))
 # import json
 # with open("mod2.json", "w") as f:
-#     json.dump(generation_lib.export_mod(bobstruction), f, indent=4)
-# print(generation_lib.import_mod(generation_lib.export_mod(bobstruction), "../mods/forge"))
+#     json.dump(ender_py.export_mod(bobstruction), f, indent=4)
+# print(ender_py.import_mod(ender_py.export_mod(bobstruction), "../mods/forge"))

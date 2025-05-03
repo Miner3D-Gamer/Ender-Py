@@ -19,6 +19,9 @@
                     "action": "get_block_from_pos",
                     "pos": {
                         "action": "get_event_pos"
+                    },
+                    "dimension": {
+                        "action": "get_dimension_of_event"
                     }
                 },
                 "block2": {
@@ -36,6 +39,9 @@
                 },
                 "pos": {
                     "action": "get_event_pos"
+                },
+                "dimension": {
+                    "action": "get_dimension_of_event"
                 }
             },
             {

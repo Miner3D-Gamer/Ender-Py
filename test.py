@@ -5,7 +5,7 @@ from ender_py.procedures import ProcedureInternal
 
 procedure = json.loads(strip_wood_procedure)
 
-procedure_blocks_path = "generation_lib/procedures"
+procedure_blocks_path = "ender_py/procedures"
 
 requested_version = "forge-1.20.1"
 

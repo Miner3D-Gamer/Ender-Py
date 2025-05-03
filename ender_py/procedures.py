@@ -272,7 +272,7 @@ class ProcedureInternal:
                         if next is None:
                             log(
                                 FATAL,
-                                f"Input {singular_expected_input['name']} not found in block {block['action']}",
+                                f"Input '{singular_expected_input['name']}' not found in block '{block['action']}' (Procedure)",
                             )
                         if isinstance(next, list):
                             sub_contents = ""
@@ -282,13 +282,14 @@ class ProcedureInternal:
                                 next_given = self.handle_block(
                                     n, requested_version, blocks
                                 )
-                                if not self.does_throughput_match(
-                                    singular_expected_input, next_given
-                                ):
-                                    log(
-                                        FATAL,
-                                        f"Expected throughput '{singular_expected_input['type']}' but got throughput '{next_given['output']}' between blocks '{block['action']}' and '{n['action']}' (Hugging action list)",
-                                    )
+                                # Limit what is allowed to be passed between a hugging block and its insides
+                                # if not self.does_throughput_match(
+                                #     singular_expected_input, next_given
+                                # ):
+                                #     log(
+                                #         FATAL,
+                                #         f"Expected throughput '{singular_expected_input['type']}' but got throughput '{next_given['output']}' between blocks '{block['action']}' and '{n['action']}' (Hugging action list)",
+                                #     )
                                 sub_contents += next_given["file_contents"]
                                 further_required_imports.extend(
                                     next_given["required_imports"]

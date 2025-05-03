@@ -1,0 +1,15 @@
+{
+    "block.bobstruction.test_log": "Test Log",
+    "block.bobstruction.stripped_test_log": "Test Log",
+    "block.bobstruction.test_planks": "Test Planks",
+    "block.bobstruction.test_leaves": "Test Leaves",
+    "block.bobstruction.test_stairs": "Test Stairs",
+    "block.bobstruction.test_slab": "Test Slab",
+    "block.bobstruction.test_fence": "Test Fence",
+    "block.bobstruction.test_fence_gate": "Test Fence Gate",
+    "block.bobstruction.test_door": "Test Door",
+    "block.bobstruction.test_pressure_plate": "Test Pressure Plate",
+    "block.bobstruction.test_trapdoor": "Test Trapdoor",
+    "block.bobstruction.test_button": "Test Button",
+    "creative_tab.bobstruction.creat": "Custom Tab"
+}
