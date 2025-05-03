@@ -31,10 +31,10 @@ Library in the 'generation_lib' folder
 
 # Missing:
 
-# Proper loot table support
+### (Unsorted)
 
-# Procedure support (visual -> json -> java) -> Events
-
+- Proper loot table support
+- Procedure support (visual -> json -> java) -> Events
 - Signs
 - Boats
 - Mobs
@@ -75,3 +75,4 @@ Library in the 'generation_lib' folder
 - Commands
 - Config (File/UI, Cloth?)
 - Support for popular mods like Create/Serene Seasons/Curious API
+- Support for custom colors
