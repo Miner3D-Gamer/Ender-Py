@@ -1,0 +1,1 @@
+{string1}.equals({string2})

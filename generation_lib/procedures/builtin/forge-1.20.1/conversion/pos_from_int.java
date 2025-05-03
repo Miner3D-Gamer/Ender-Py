@@ -1,0 +1,1 @@
+new BlockPos({x}, {y}, {z})

@@ -1,0 +1,133 @@
+{
+    "name": {
+        "skip": true
+    },
+    "_food_properties": {
+        "required_imports": [
+            "net.minecraft.world.food.FoodProperties"
+        ],
+        "location": "attribute",
+        "insert": ".food(new FoodProperties.Builder()%s.build())",
+        "options": [
+            {
+                "expected": "is_meat",
+                "return": ".meat()"
+            },
+            {
+                "expected": "nutrition",
+                "return": ".nutrition(%s)",
+                "type": "int"
+            },
+            {
+                "expected": "saturation",
+                "return": ".saturationMod(%s)",
+                "type": "int"
+            },
+            {
+                "expected": "fast_consumed",
+                "return": ".fast()"
+            },
+            {
+                "expected": "always_edible",
+                "return": ".alwaysEat()"
+            }
+        ]
+    },
+    "stack_size": {
+        "location": "attribute",
+        "insert": ".stacksTo(%s)",
+        "type": "int"
+    },
+    "fire_resistant": {
+        "location": "attribute",
+        "insert": ".fireResistant()"
+    },
+    "remains_after_crafting": {
+        "location": "attribute",
+        "insert": ".craftRemainder()"
+    },
+    "durability": {
+        "location": "attribute",
+        "insert": "..durability(%s)",
+        "type": "int"
+    },
+    "unrepairable": {
+        "location": "attribute",
+        "insert": ".setNoRepair()"
+    },
+    "rarity": {
+        "required_imports": [
+            "net.minecraft.world.item.Rarity"
+        ],
+        "location": "attribute",
+        "insert": ".rarity(Rarity.%s)",
+        "options": [
+            {
+                "expected": "common",
+                "return": "COMMON"
+            },
+            {
+                "expected": "uncommon",
+                "return": "UNCOMMON"
+            },
+            {
+                "expected": "rare",
+                "return": "RARE"
+            },
+            {
+                "expected": "epic",
+                "return": "EPIC"
+            }
+        ]
+    },
+    "enchantability": {
+        "location": "override",
+        "insert": "int getEnchantmentValue() {return %s;}",
+        "type": "int"
+    },
+    "block_break_speed": {
+        "required_imports": [
+            "net.minecraft.world.level.block.state.BlockState"
+        ],
+        "location": "override",
+        "insert": "public float getDestroySpeed(ItemStack par1ItemStack, BlockState par2Block) {return %sf;}",
+        "type": "float"
+    },
+    "can_break_any_block": {
+        "location": "override",
+        "insert": "public boolean isCorrectToolForDrops(BlockState state) {return true;}"
+    },
+    "item_animation": {
+        "required_imports": [
+            "net.minecraft.world.item.UseAnim"
+        ],
+        "location": "override",
+        "insert": "public UseAnim getUseAnimation(ItemStack itemstack) {return UseAnim.%s;}",
+        "options": [
+            {
+                "expected": "eat",
+                "return": "EAT"
+            },
+            {
+                "expected": "shield_blocking",
+                "return": "BLOCK"
+            },
+            {
+                "expected": "bow",
+                "return": "BOW"
+            },
+            {
+                "expected": "crossbow",
+                "return": "CROSSBOW"
+            },
+            {
+                "expected": "drink",
+                "return": "DRINK"
+            },
+            {
+                "expected": "spear",
+                "return": "SPEAR"
+            }
+        ]
+    }
+}

@@ -1,0 +1,978 @@
+{
+    "name": {
+        "#comment": "More of a freeby since every block needs a name",
+        "required_imports": [
+            "net.minecraft.world.level.block.*"
+        ],
+        "location": "before",
+        "insert": "() -> Blocks.AIR.defaultBlockState(), ",
+        "condition": [
+            [
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "stair"
+                }
+            ]
+        ]
+    },
+    "pressure_plate_activation": {
+        "required_imports": [
+            "net.minecraft.world.level.block.*"
+        ],
+        "location": "before",
+        "insert": "Sensitivity.%s, ",
+        "condition": [
+            [
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "pressure_plate"
+                }
+            ]
+        ],
+        "options": [
+            {
+                "expected": "mobs",
+                "return": "MOBS"
+            },
+            {
+                "expected": "all",
+                "return": "EVERYTHING"
+            }
+        ]
+    },
+    "catches_fire_from_lava": {
+        "location": "attribute",
+        "insert": ".ignitedByLava()"
+    },
+    "loot_table": {
+        "skip": true
+    },
+    "_strength": {
+        "location": "attribute",
+        "insert": ".strength(%s)",
+        "option_divider": ",",
+        "options": [
+            {
+                "expected": "hardness",
+                "return": "%sf",
+                "required": true,
+                "type": "float"
+            },
+            {
+                "expected": "resistance",
+                "return": "%sf",
+                "required": true,
+                "type": "float"
+            }
+        ]
+    },
+    "speed_factor": {
+        "location": "attribute",
+        "insert": ".speedFactor(%sf)",
+        "type": "float"
+    },
+    "luminance": {
+        "location": "attribute",
+        "insert": ".lightLevel(s -> %s)",
+        "type": "int"
+    },
+    "no_collision": {
+        "location": "attribute",
+        "insert": ".noCollission()"
+    },
+    "emmisive_texture": {
+        "location": "attribute",
+        "insert": ".hasPostProcess((bs, br, bp) -> true).emissiveRendering((bs, br, bp) -> true)"
+    },
+    "requires_correct_tool_for_drops": {
+        "location": "attribute",
+        "insert": ".requiresCorrectToolForDrops()"
+    },
+    "sounds": {
+        "#comment": "Make attribute system support inserts in multiple locations",
+        "location": "attribute",
+        "insert": ".sound(%s).strength(1f, 10f)",
+        "options": [
+            {
+                "expected": "custom",
+                "return": "new ForgeSoundType(1.0f, 1.0f, \n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{break}\")), \n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{step}\")),\n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{place}\")), \n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{hit}\")),\n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{fall}\"))))",
+                "type": "dict",
+                "values": {
+                    "break": "int",
+                    "step": "int",
+                    "place": "int",
+                    "hit": "int",
+                    "fall": "int"
+                }
+            },
+            {
+                "expected": "ground",
+                "return": "SoundType.GRAVEL"
+            },
+            {
+                "expected": "air",
+                "return": "SoundType.EMPTY"
+            },
+            {
+                "expected": "wood",
+                "return": "SoundType.WOOD"
+            },
+            {
+                "expected": "plant",
+                "return": "SoundType.GRASS"
+            },
+            {
+                "expected": "lily_pads",
+                "return": "SoundType.LILY_PAD"
+            },
+            {
+                "expected": "stone",
+                "return": "SoundType.STONE"
+            },
+            {
+                "expected": "metal",
+                "return": "SoundType.METAL"
+            },
+            {
+                "expected": "glass",
+                "return": "SoundType.GLASS"
+            },
+            {
+                "expected": "cloth",
+                "return": "SoundType.WOOL"
+            },
+            {
+                "expected": "sand",
+                "return": "SoundType.SAND"
+            },
+            {
+                "expected": "snow",
+                "return": "SoundType.SNOW"
+            },
+            {
+                "expected": "ladder",
+                "return": "SoundType.LADDER"
+            },
+            {
+                "expected": "anvil",
+                "return": "SoundType.ANVIL"
+            },
+            {
+                "expected": "slime",
+                "return": "SoundType.SLIME_BLOCK"
+            },
+            {
+                "expected": "wet_grass",
+                "return": "SoundType.WET_GRASS"
+            },
+            {
+                "expected": "coral",
+                "return": "SoundType.CORAL_BLOCK"
+            },
+            {
+                "expected": "bamboo",
+                "return": "SoundType.BAMBOO"
+            },
+            {
+                "expected": "bamboo_sapling",
+                "return": "SoundType.BAMBOO_SAPLING"
+            },
+            {
+                "expected": "scaffolding",
+                "return": "SoundType.SCAFFOLDING"
+            },
+            {
+                "expected": "sweet_berry_bush",
+                "return": "SoundType.SWEET_BERRY_BUSH"
+            },
+            {
+                "expected": "crop",
+                "return": "SoundType.CROP"
+            },
+            {
+                "expected": "stem",
+                "return": "SoundType.HARD_CROP"
+            },
+            {
+                "expected": "vine",
+                "return": "SoundType.VINE"
+            },
+            {
+                "expected": "nether_wart",
+                "return": "SoundType.NETHER_WART"
+            },
+            {
+                "expected": "lantern",
+                "return": "SoundType.LANTERN"
+            },
+            {
+                "expected": "honey",
+                "return": "SoundType.HONEY_BLOCK"
+            },
+            {
+                "expected": "hyphae",
+                "return": "SoundType.STEM"
+            },
+            {
+                "expected": "nylium",
+                "return": "SoundType.NYLIUM"
+            },
+            {
+                "expected": "fungus",
+                "return": "SoundType.FUNGUS"
+            },
+            {
+                "expected": "root",
+                "return": "SoundType.ROOTS"
+            },
+            {
+                "expected": "shroomlight",
+                "return": "SoundType.SHROOMLIGHT"
+            },
+            {
+                "expected": "nether_vine",
+                "return": "SoundType.WEEPING_VINES"
+            },
+            {
+                "expected": "nether_vine_low_pitch",
+                "return": "SoundType.TWISTING_VINES"
+            },
+            {
+                "expected": "soul_sand",
+                "return": "SoundType.SOUL_SAND"
+            },
+            {
+                "expected": "soul_soil",
+                "return": "SoundType.SOUL_SOIL"
+            },
+            {
+                "expected": "basalt",
+                "return": "SoundType.BASALT"
+            },
+            {
+                "expected": "wart",
+                "return": "SoundType.WART_BLOCK"
+            },
+            {
+                "expected": "netherrack",
+                "return": "SoundType.NETHERRACK"
+            },
+            {
+                "expected": "nether_brick",
+                "return": "SoundType.NETHER_BRICKs"
+            },
+            {
+                "expected": "nether_sprout",
+                "return": "SoundType.NETHER_SPROUTS"
+            },
+            {
+                "expected": "nether_ore",
+                "return": "SoundType.NETHER_ORE"
+            },
+            {
+                "expected": "bone",
+                "return": "SoundType.BONE_BLOCK"
+            },
+            {
+                "expected": "netherite",
+                "return": "SoundType.NETHERITE_BLOCK"
+            },
+            {
+                "expected": "ancient_debris",
+                "return": "SoundType.ANCIENT_DEBRIS"
+            },
+            {
+                "expected": "lodestone",
+                "return": "SoundType.LODESTONE"
+            },
+            {
+                "expected": "chain",
+                "return": "SoundType.CHAIN"
+            },
+            {
+                "expected": "nether_gold_ore",
+                "return": "SoundType.NETHER_GOLD_ORE"
+            },
+            {
+                "expected": "gilded_blackstone",
+                "return": "SoundType.GILDED_BLACKSTONE"
+            },
+            {
+                "expected": "amethyst",
+                "return": "SoundType.AMETHYST_BLOCK"
+            },
+            {
+                "expected": "amethyst_cluster",
+                "return": "SoundType.AMETHYST_CLUSTER"
+            },
+            {
+                "expected": "azalea",
+                "return": "SoundType.AZALEA"
+            },
+            {
+                "expected": "azalea_leaves",
+                "return": "SoundType.AZALEA_LEAVES"
+            },
+            {
+                "expected": "big_drip_leaf",
+                "return": "SoundType.BIG_DRIP_LEAF"
+            },
+            {
+                "expected": "candle",
+                "return": "SoundType.CANDLE"
+            },
+            {
+                "expected": "calcite",
+                "return": "SoundType.CALCITE"
+            },
+            {
+                "expected": "cave_vine",
+                "return": "SoundType.CAVE_VINES"
+            },
+            {
+                "expected": "copper",
+                "return": "SoundType.COPPER"
+            },
+            {
+                "expected": "deepslate",
+                "return": "SoundType.DEEPSLATE"
+            },
+            {
+                "expected": "deepslate_bricks",
+                "return": "SoundType.DEEPSLATE_BRICKS"
+            },
+            {
+                "expected": "deepslate_tile",
+                "return": "SoundType.DEEPSLATE_TILES"
+            },
+            {
+                "expected": "dripstone_block",
+                "return": "SoundType.DRIPSTONE_BLOCK"
+            },
+            {
+                "expected": "flowering_azalea",
+                "return": "SoundType.FLOWERING_AZALEA"
+            },
+            {
+                "expected": "glow_lichen",
+                "return": "SoundType.GLOW_LICHEN"
+            },
+            {
+                "expected": "hanging_roots",
+                "return": "SoundType.HANGING_ROOTS"
+            },
+            {
+                "expected": "large_amethyst_bud",
+                "return": "SoundType.LARGE_AMETHYST_BUD"
+            },
+            {
+                "expected": "medium_amethyst_bud",
+                "return": "SoundType.MEDIUM_AMETHYST_BUD"
+            },
+            {
+                "expected": "moss_carpet",
+                "return": "SoundType.MOSS_CARPET"
+            },
+            {
+                "expected": "pink_petals",
+                "return": "SoundType.PINK_PETALS"
+            },
+            {
+                "expected": "moss",
+                "return": "SoundType.MOSS"
+            },
+            {
+                "expected": "pointed_dripstone",
+                "return": "SoundType.POINTED_DRIPSTONE"
+            },
+            {
+                "expected": "polished_deepslate",
+                "return": "SoundType.POLISHED_DEEPSLATE"
+            },
+            {
+                "expected": "powder_snow",
+                "return": "SoundType.POWDER_SNOW"
+            },
+            {
+                "expected": "rooted_dirt",
+                "return": "SoundType.ROOTED_DIRT"
+            },
+            {
+                "expected": "sculk_sensor",
+                "return": "SoundType.SCULK_SENSOR"
+            },
+            {
+                "expected": "sculk_catalyst",
+                "return": "SoundType.SCULK_CATALYST"
+            },
+            {
+                "expected": "sculk",
+                "return": "SoundType.SCULK"
+            },
+            {
+                "expected": "sculk_vein",
+                "return": "SoundType.SCULK_VEIN"
+            },
+            {
+                "expected": "sculk_shrieker",
+                "return": "SoundType.SCULK_SHRIEKER"
+            },
+            {
+                "expected": "small_amethyst_bud",
+                "return": "SoundType.SMALL_AMETHYST_BUD"
+            },
+            {
+                "expected": "small_dripleaf",
+                "return": "SoundType.SMALL_DRIPLEAF"
+            },
+            {
+                "expected": "spore_blossom",
+                "return": "SoundType.SPORE_BLOSSOM"
+            },
+            {
+                "expected": "tuff",
+                "return": "SoundType.TUFF"
+            },
+            {
+                "expected": "froglight",
+                "return": "SoundType.FROGLIGHT"
+            },
+            {
+                "expected": "mangroove_roots",
+                "return": "SoundType.MANGROVE_ROOTS"
+            },
+            {
+                "expected": "muddy_mangrove_roots",
+                "return": "SoundType.MUDY_MANGROVE_ROOTS"
+            },
+            {
+                "expected": "mud",
+                "return": "SoundType.MUD"
+            },
+            {
+                "expected": "mud_bricks",
+                "return": "SoundType.MUD_BRICKS"
+            },
+            {
+                "expected": "packed_mud",
+                "return": "SoundType.PACKED_MUD"
+            },
+            {
+                "expected": "bamboo_wood",
+                "return": "SoundType.BAMBOO_WOOD"
+            },
+            {
+                "expected": "nether_wood",
+                "return": "SoundType.NETHER_WOOD"
+            },
+            {
+                "expected": "cherry_wood",
+                "return": "SoundType.CHERRY_WOOD"
+            }
+        ]
+    },
+    "random_model_offset": {
+        "location": "attribute",
+        "insert": ".offsetType(OffsetType.%s)",
+        "options": [
+            {
+                "expected": "xz",
+                "return": "XZ"
+            },
+            {
+                "expected": "xyz",
+                "return": "XYZ"
+            }
+        ]
+    },
+    "push_reaction": {
+        "location": "attribute",
+        "insert": ".pushReaction(PushReaction.%s)",
+        "options": [
+            {
+                "expected": "destroy",
+                "return": "DESTROY"
+            },
+            {
+                "expected": "block",
+                "return": "BLOCK"
+            },
+            {
+                "expected": "push_only",
+                "return": "PUSH_ONLY"
+            },
+            {
+                "expected": "ignore",
+                "return": "IGNORE"
+            },
+            {
+                "expected": "normal",
+                "return": "NORMAL"
+            }
+        ]
+    },
+    "has_transparency": {
+        "location": "attribute",
+        "insert": ".noOcclusion()"
+    },
+    "no_break_particles": {
+        "location": "attribute",
+        "insert": ".noParticlesOnBreak()"
+    },
+    "friction": {
+        "location": "attribute",
+        "insert": ".friction(%sf)",
+        "type": "float"
+    },
+    "bounding_box": {
+        "skip": true,
+        "#comment": "It's more complicated than just this",
+        "location": "override",
+        "insert": "public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {return Shapes.or({%s);}",
+        "type": "bounding_box"
+    },
+    "opacity": {
+        "location": "override",
+        "insert": "public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {return %s;}",
+        "type": "int"
+    },
+    "is_replaceable": {
+        "location": "override",
+        "insert": "public boolean canBeReplaced(BlockState state, BlockPlaceContext context) {return context.getItemInHand().getItem() != this.asItem();}"
+    },
+    "can_sustain_plants": {
+        "location": "override",
+        "insert": "public boolean canSustainPlant(BlockState state, BlockGetter world, BlockPos pos, Direction direction, IPlantable plantable) {return true;}"
+    },
+    "is_climbable": {
+        "location": "override",
+        "insert": "public boolean isLadder(BlockState state, LevelReader world, BlockPos pos, LivingEntity entity) {return true;}"
+    },
+    "flammability": {
+        "required_imports": [
+            "net.minecraft.world.level.BlockGetter",
+            "net.minecraft.core.BlockPos"
+        ],
+        "location": "override",
+        "insert": "public int getFlammability(BlockState state, BlockGetter world, BlockPos pos, Direction face) {return %s;}",
+        "type": "int"
+    },
+    "fire_spread_speed": {
+        "location": "override",
+        "insert": "public int getFireSpreadSpeed(BlockState state, BlockGetter world, BlockPos pos, Direction face) {return %s;}",
+        "type": "int"
+    },
+    "connect_to_redstone": {
+        "location": "override",
+        "insert": "public boolean canConnectRedstone(BlockState state, BlockGetter world, BlockPos pos, Direction side) {return true;}",
+        "type": "int"
+    },
+    "emmit_redstone_signal": {
+        "location": "override",
+        "insert": "public int getSignal(BlockState blockstate, BlockGetter blockAccess, BlockPos pos, Direction direction) {return %s;}",
+        "type": "int"
+    },
+    "connected_sides": {
+        "location": "override",
+        "insert": "public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);}"
+    },
+    "hide_fluid_when_submerged": {
+        "location": "override",
+        "insert": "public boolean shouldDisplayFluidOverlay(BlockState state, BlockAndTintGetter world, BlockPos pos, FluidState fluidstate) {return true;}"
+    },
+    "rotation": {
+        "required_imports": [
+            "net.minecraft.world.level.block.state.properties.EnumProperty",
+            "net.minecraft.world.level.block.state.properties.BlockStateProperties",
+            "net.minecraft.world.level.block.state.StateDefinition",
+            "net.minecraft.world.level.block.Rotation",
+            "net.minecraft.world.item.context.BlockPlaceContext",
+            "net.minecraft.core.Direction"
+        ],
+        "location": "override",
+        "required": true,
+        "options": [
+            {
+                "expected": "log",
+                "extra_code_after": "this.registerDefaultState(this.stateDefinition.any().setValue(AXIS, Direction.Axis.Y));",
+                "extra_code_before": "public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;",
+                "return": [
+                    "protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {super.createBlockStateDefinition(builder);builder.add(AXIS);}",
+                    "public BlockState getStateForPlacement(BlockPlaceContext context) {return super.getStateForPlacement(context).setValue(AXIS, context.getClickedFace().getAxis());}",
+                    "public BlockState rotate(BlockState state, Rotation rot) {if (rot == Rotation.CLOCKWISE_90 || rot == Rotation.COUNTERCLOCKWISE_90) {if (state.getValue(AXIS) == Direction.Axis.X) {return state.setValue(AXIS, Direction.Axis.Z);} else if (state.getValue(AXIS) == Direction.Axis.Z) {return state.setValue(AXIS, Direction.Axis.X);}}return state;}"
+                ]
+            },
+            {
+                "expected": "none"
+            }
+        ]
+    },
+    "map_color": {
+        "required_imports": [
+            "net.minecraft.world.level.material.MapColor"
+        ],
+        "location": "attribute",
+        "insert": ".mapColor(MapColor.%s)",
+        "options": [
+            {
+                "expected": "black",
+                "return": "COLOR_BLACK"
+            },
+            {
+                "expected": "green",
+                "return": "COLOR_GREEN"
+            },
+            {
+                "expected": "blue",
+                "return": "COLOR_BLUE"
+            },
+            {
+                "expected": "red",
+                "return": "COLOR_RED"
+            },
+            {
+                "expected": "yellow",
+                "return": "COLOR_YELLOW"
+            },
+            {
+                "expected": "brown",
+                "return": "COLOR_BROWN"
+            },
+            {
+                "expected": "purple",
+                "return": "COLOR_PURPLE"
+            },
+            {
+                "expected": "cyan",
+                "return": "COLOR_CYAN"
+            },
+            {
+                "expected": "light_gray",
+                "return": "COLOR_LIGHT_GRAY"
+            },
+            {
+                "expected": "gray",
+                "return": "COLOR_GRAY"
+            },
+            {
+                "expected": "pink",
+                "return": "COLOR_PINK"
+            },
+            {
+                "expected": "light_blue",
+                "return": "COLOR_LIGHT_BLUE"
+            },
+            {
+                "expected": "orange",
+                "return": "COLOR_ORANGE"
+            },
+            {
+                "expected": "magenta",
+                "return": "COLOR_MAGENTA"
+            },
+            {
+                "expected": "white",
+                "return": "COLOR_WHITE"
+            },
+            {
+                "expected": "none",
+                "return": "NONE"
+            },
+            {
+                "expected": "grass",
+                "return": "GRASS"
+            },
+            {
+                "expected": "sand",
+                "return": "SAND"
+            },
+            {
+                "expected": "wool",
+                "return": "WOOL"
+            },
+            {
+                "expected": "fire",
+                "return": "FIRE"
+            },
+            {
+                "expected": "ice",
+                "return": "ICE"
+            },
+            {
+                "expected": "metal",
+                "return": "METAL"
+            },
+            {
+                "expected": "plant",
+                "return": "PLANT"
+            },
+            {
+                "expected": "snow",
+                "return": "SNOW"
+            },
+            {
+                "expected": "clay",
+                "return": "CLAY"
+            },
+            {
+                "expected": "dirt",
+                "return": "DIRT"
+            },
+            {
+                "expected": "stone",
+                "return": "STONE"
+            },
+            {
+                "expected": "water",
+                "return": "WATER"
+            },
+            {
+                "expected": "wood",
+                "return": "WOOD"
+            },
+            {
+                "expected": "quartz",
+                "return": "QUARTZ"
+            },
+            {
+                "expected": "gold",
+                "return": "GOLD"
+            },
+            {
+                "expected": "diamond",
+                "return": "DIAMOND"
+            },
+            {
+                "expected": "lapis",
+                "return": "LAPIS"
+            },
+            {
+                "expected": "emerald",
+                "return": "EMERALD"
+            },
+            {
+                "expected": "podzol",
+                "return": "PODZOL"
+            },
+            {
+                "expected": "nether",
+                "return": "NETHER"
+            },
+            {
+                "expected": "terracotta_white",
+                "return": "TERRACOTTA_WHITE"
+            },
+            {
+                "expected": "terracotta_orange",
+                "return": "TERRACOTTA_ORANGE"
+            },
+            {
+                "expected": "terracotta_magenta",
+                "return": "TERRACOTTA_MAGENTA"
+            },
+            {
+                "expected": "terracotta_light_blue",
+                "return": "TERRACOTTA_LIGHT_BLUE"
+            },
+            {
+                "expected": "terracotta_yellow",
+                "return": "TERRACOTTA_YELLOW"
+            },
+            {
+                "expected": "terracotta_light_green",
+                "return": "TERRACOTTA_LIGHT_GREEN"
+            },
+            {
+                "expected": "terracotta_pink",
+                "return": "TERRACOTTA_PINK"
+            },
+            {
+                "expected": "terracotta_gray",
+                "return": "TERRACOTTA_GRAY"
+            },
+            {
+                "expected": "terracotta_light_gray",
+                "return": "TERRACOTTA_LIGHT_GRAY"
+            },
+            {
+                "expected": "terracotta_cyan",
+                "return": "TERRACOTTA_CYAN"
+            },
+            {
+                "expected": "terracotta_purple",
+                "return": "TERRACOTTA_PURPLE"
+            },
+            {
+                "expected": "terracotta_blue",
+                "return": "TERRACOTTA_BLUE"
+            },
+            {
+                "expected": "terracotta_brown",
+                "return": "TERRACOTTA_BROWN"
+            },
+            {
+                "expected": "terracotta_green",
+                "return": "TERRACOTTA_GREEN"
+            },
+            {
+                "expected": "terracotta_red",
+                "return": "TERRACOTTA_RED"
+            },
+            {
+                "expected": "terracotta_black",
+                "return": "TERRACOTTA_BLACK"
+            },
+            {
+                "expected": "crimson_nylium",
+                "return": "CRIMSON_NYLIUM"
+            },
+            {
+                "expected": "crimson_stem",
+                "return": "CRIMSON_STEM"
+            },
+            {
+                "expected": "crimson_hyphae",
+                "return": "CRIMSON_HYPHAE"
+            },
+            {
+                "expected": "warped_nylium",
+                "return": "WARPED_NYLIUM"
+            },
+            {
+                "expected": "warped_stem",
+                "return": "WARPED_STEM"
+            },
+            {
+                "expected": "warped_hyphae",
+                "return": "WARPED_HYPHAE"
+            },
+            {
+                "expected": "warped_wart_block",
+                "return": "WARPED_WART_BLOCK"
+            },
+            {
+                "expected": "deepslate",
+                "return": "DEEPSLATE"
+            },
+            {
+                "expected": "raw_iron",
+                "return": "RAW_IRON"
+            },
+            {
+                "expected": "glow_lichen",
+                "return": "GLOW_LICHEN"
+            }
+        ]
+    },
+    "block_material_type": {
+        "#comment": "Add required and condition features",
+        "condition": [
+            [
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "pressure_plate"
+                },
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "fence_gate"
+                },
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "button"
+                },
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "trap_door"
+                },
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "door"
+                }
+            ]
+        ],
+        "condition_not_met_okay": true,
+        "required": true,
+        "location": "after",
+        "insert": "%s",
+        "options": [
+            {
+                "#comment": "Out of these special bastards, NOT THE DAMN FENCE GATE",
+                "condition": [
+                    [
+                        {
+                            "type": "operator",
+                            "name": "not",
+                            "value": {
+                                "type": "slot",
+                                "name": "blocktype",
+                                "value": "fence_gate"
+                            }
+                        }
+                    ]
+                ],
+                "required_imports": [
+                    "net.minecraft.world.level.block.state.properties.BlockSetType"
+                ],
+                "expected": "oak",
+                "return": ", BlockSetType.OAK"
+            },
+            {
+                "#comment": "Now Mr. special get's his treatment",
+                "condition": [
+                    [
+                        {
+                            "type": "slot",
+                            "name": "blocktype",
+                            "value": "fence_gate"
+                        }
+                    ]
+                ],
+                "required_imports": [
+                    "net.minecraft.world.level.block.state.properties.WoodType"
+                ],
+                "expected": "oak",
+                "return": ", WoodType.OAK"
+            }
+        ]
+    },
+    "button_ticks_pressed": {
+        "#comment": "Add required and condition for suboptions features",
+        "condition": [
+            [
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "button"
+                }
+            ]
+        ],
+        "condition_not_met_okay": true,
+        "required": true,
+        "location": "after",
+        "insert": ", %s",
+        "type": "int"
+    },
+    "button_pressed_by_arrow": {
+        "condition": [
+            [
+                {
+                    "type": "slot",
+                    "name": "blocktype",
+                    "value": "button"
+                }
+            ]
+        ],
+        "condition_not_met_okay": true,
+        "required": true,
+        "location": "after",
+        "insert": ", %s",
+        "type": "bool"
+    }
+}

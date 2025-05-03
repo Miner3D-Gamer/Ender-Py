@@ -1,0 +1,29 @@
+{
+    "type": "minecraft:block",
+    "random_sequence": "{mod_id}:blocks/{block_id}",
+    "pools": [
+      {
+        "rolls": 1.0,
+        "conditions": [
+          {
+            "condition": "minecraft:survives_explosion"
+          }
+        ],
+        "entries": [
+          {
+            "type": "minecraft:item",
+            "name": "{mod_id}:{block_id}",
+            "conditions": [
+              {
+                "block": "{mod_id}:{block_id}",
+                "condition": "minecraft:block_state_property",
+                "properties": {
+                  "half": "lower"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }

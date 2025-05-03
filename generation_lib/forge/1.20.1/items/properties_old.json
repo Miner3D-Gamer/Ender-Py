@@ -1,0 +1,64 @@
+{
+    "properties": {
+        "food_properties": {
+            "setup": ".food(new FoodProperties.Builder()",
+            "end": ".build())",
+            "options": [
+                {
+                    "is_meat": ".meat()"
+                },
+                {
+                    "nutrition": ".nutrition({value})"
+                },
+                {
+                    "saturation": ".saturationMod({value})"
+                },
+                {
+                    "fast_consumed": ".fast()"
+                },
+                {
+                    "always_edible": ".alwaysEat()"
+                }
+            ]
+        },
+        "stack_size": ".stacksTo({value})",
+        "fire_resistant": ".fireResistant()",
+        "remains_after_crafting": ".craftRemainder()",
+        "rarity": {
+            "setup": ".rarity(",
+            "end": ")",
+            "options": [
+                {
+                    "common": "Rarity.COMMON",
+                    "uncommon": "Rarity.UNCOMMON",
+                    "rare": "Rarity.RARE",
+                    "epic": "Rarity.EPIC"
+                }
+            ]
+        },
+        "durability": ".durability({value})",
+        "unrepairable": ".setNoRepair()"
+    },
+    "overrides": {
+        "enchantability": "public int getEnchantmentValue() {return {value};}",
+        "block_break_speed": "public float getDestroySpeed(ItemStack par1ItemStack, BlockState par2Block) {return {value}f;}",
+        "can_break_any_block": "public boolean isCorrectToolForDrops(BlockState state) {return true;}",
+        "item_animation": {
+            "setup":"public UseAnim getUseAnimation(ItemStack itemstack) {return ",
+            "end":";}",
+            "options":[
+                {
+                    "eat":"UseAnim.EAT",
+                    "swing":"UseAnim.SWING",
+                    "shield_blocking":"UseAnim.BLOCK",
+                    "bow":"UseAnim.BOW",
+                    "crossbow":"UseAnim.CROSSBOW",
+                    "drink":"UseAnim.DRINK",
+                    "spear":"UseAnim.SPEAR"
+
+                }
+            ]
+        }
+
+    }
+}

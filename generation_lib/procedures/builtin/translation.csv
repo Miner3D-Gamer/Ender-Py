@@ -1,0 +1,25 @@
+translation_key,en
+set_block,In {} set Block {} at {}
+swing,Make entity {} swing {}
+replace_block_and_keep_blockstate_and_nbt,In {} replace Block with {} at {} but keep blockstate and nbt
+block_right_click,On block right click
+pos,"X: {}, Y: {}, Z:{}"
+get_block_by_id,Get block by ID: {}
+get_id_of_block,Get ID of block: {}
+and,{} and {}
+string_equals,{} == {}
+get_block_from_pos,In {} get block at pos {}
+get_dimension_of_event,Get dimension of event
+get_event_pos,Get event pos
+get_main_hand,Get itemstack in main hand of {}
+get_off_hand,Get itemstack in off hand of {}
+get_event_entity,Get entity from event
+is_itemstack_tagged_with,Is itemstack {} tagged with {}
+get_itemstack_damage,Get damage of itemstack {}
+minus,{} - {}
+plus,{} + {}
+set_itemstack_damage,Set damage of itemstack {} to {}
+not_client_side,Is dimension {} not client side
+if,If {}
+compare_blocks,{} == {}
+get_int_from_pos,Get {} of {}

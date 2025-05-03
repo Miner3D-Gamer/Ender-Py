@@ -1,0 +1,21 @@
+{
+    "name": {
+        "skip": true
+    },
+    "hide_title": {
+        "location": "attribute",
+        "insert": ".hideTitle()"
+    },
+    "no_scrollbar": {
+        "location": "attribute",
+        "insert": ".noScrollbar()"
+    },
+    "alignment_right": {
+        "location": "attribute",
+        "insert": ".alignedRight()"
+    },
+    "search_bar": {
+        "location": "attribute",
+        "insert": ".withSearchBar()"
+    }
+}

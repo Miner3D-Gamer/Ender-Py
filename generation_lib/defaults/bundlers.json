@@ -1,0 +1,26 @@
+{
+    "blocks": {
+        "offset": "blocks",
+        "block_bundler": "block_bundler.java",
+        "individual_block_code": "block_code.java",
+        "block_bundler_component": "block_component.java",
+        "import_line": "import_line.java",
+        "properties": "properties.json"
+    },
+    "items": {
+        "offset": "items",
+        "item_bundler": "item_bundler.java",
+        "individual_item_code": "item_code.java",
+        "item_bundler_component": "item_component.java",
+        "import_line": "import_line.java",
+        "properties": "properties.json"
+    },
+    "creative_tabs": {
+        "offset": "creative_tabs",
+        "creative_tab_bundler": "creative_tab_bundler.java",
+        "individual_creative_tab_code": "creative_tab_code.java",
+        "creative_tab_bundler_component": "creative_tab_component.java",
+        "import_line": "import_line.java",
+        "properties": "properties.json"
+    }
+}

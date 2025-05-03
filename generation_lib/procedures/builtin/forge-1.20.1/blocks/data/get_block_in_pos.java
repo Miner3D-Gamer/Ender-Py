@@ -1,0 +1,1 @@
+{dimension}.getBlockState({pos}).getBlock()

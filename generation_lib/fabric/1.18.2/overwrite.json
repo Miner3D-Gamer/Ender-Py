@@ -1,0 +1,24 @@
+{
+    "java_path": [
+        {
+            "file": "extra/mixin/ModMixin.java",
+            "offset": "mixin",
+            "format": true
+        }
+    ],
+    "surface": [
+        {
+            "file": "build.gradle",
+            "offset": "",
+            "format": false
+        }
+    ],
+    "resources": [
+        {
+            "file": "things/resources/mod.mixins.json",
+            "offset": "",
+            "format": true,
+            "rename": "{mod_id}.mixins.json"
+        }
+    ]
+}

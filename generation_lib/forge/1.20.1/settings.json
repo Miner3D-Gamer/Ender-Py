@@ -1,0 +1,18 @@
+{
+    "items": {
+        "import": "import {internal_mod_id}.ModItems;",
+        "setup": "ModItems.register(modEventBus);"
+    },
+    "blocks": {
+        "import": "import {internal_mod_id}.ModBlocks;",
+        "setup": "ModBlocks.register(modEventBus);"
+    },
+    "creative_mode_tabs": {
+        "import": "import {internal_mod_id}.ModCreativeModeTabs;",
+        "setup": "ModCreativeModeTabs.register(modEventBus);"
+    },
+    "procedures": {
+        "import": "",
+        "setup": ""
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "java_path": [
+    ],
+    "surface": [
+        {
+            "file": "build.gradle",
+            "offset": "",
+            "format": false
+        }
+    ]
+}

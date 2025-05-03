@@ -1,0 +1,72 @@
+{
+    "messages": {
+        "mod_loader": "You can't have the same mod id as the mod loader {id}",
+        "template_id": "You're using a templated mod id",
+        "reserved_prefix": "The prefix '{id}' is reserved for system use"
+    },
+    "blacklisted": [
+        {
+            "type": "literal",
+            "value": "minecraft",
+            "level": "FATAL",
+            "message": {
+                "type": "literal",
+                "value": "You can't have the same mod id as minecraft"
+            }
+        },
+        {
+            "type": "literal",
+            "value": "forge",
+            "level": "FATAL",
+            "message": {
+                "type": "template",
+                "value": "mod_loader"
+            }
+        },
+        {
+            "type": "literal",
+            "value": "fabric",
+            "level": "FATAL",
+            "message": {
+                "type": "template",
+                "value": "mod_loader"
+            }
+        },
+        {
+            "type": "literal",
+            "value": "quilt",
+            "level": "FATAL",
+            "message": {
+                "type": "template",
+                "value": "mod_loader"
+            }
+        },
+        {
+            "type": "literal",
+            "value": "examplemod",
+            "level": "WARNING",
+            "message": {
+                "type": "template",
+                "value": "template_id"
+            }
+        },
+        {
+            "type": "literal",
+            "value": "modid",
+            "level": "WARNING",
+            "message": {
+                "type": "template",
+                "value": "template_id"
+            }
+        },
+        {
+            "type": "literal",
+            "value": "mod",
+            "level": "WARNING",
+            "message": {
+                "type": "template",
+                "value": "template_id"
+            }
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "parent": "block/slab_top",
+    "textures": {
+      "particle": "{particle}",
+      "bottom": "{bottom}",
+      "top": "{top}",
+      "side": "{side}"
+    },
+    "render_type": "solid"
+  }

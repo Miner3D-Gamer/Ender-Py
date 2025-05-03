@@ -1,0 +1,1 @@
+{dimension}.setBlock({pos}, {block}.defaultBlockState(), Block.UPDATE_ALL)

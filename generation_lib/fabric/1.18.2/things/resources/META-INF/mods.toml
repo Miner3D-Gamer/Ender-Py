@@ -1,0 +1,8 @@
+modLoader="fabric"
+loaderVersion="[0.14,)"
+license="{licence}"
+authors="{authors}"
+id="{mod_id}"
+version="{mod_version}"
+displayName="{mod_name}"
+description="{description}"

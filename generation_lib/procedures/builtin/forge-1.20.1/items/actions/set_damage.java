@@ -1,0 +1,1 @@
+{itemstack}.setDamageValue({int});

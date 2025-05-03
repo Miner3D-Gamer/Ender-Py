@@ -1,0 +1,1 @@
+{itemstack}.is(ItemTags.{tag})

@@ -1,0 +1,1 @@
+public static final RegistryObject<Item> {component_id} = blockItem({block});

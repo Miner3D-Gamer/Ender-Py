@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "{category}",
+    "pattern": [
+        {shape}
+    ],
+    "key": {keys},
+    "result": {
+        "id": "{result_id}",
+        "components": {},
+        "count": {"result_count"}
+    }
+}

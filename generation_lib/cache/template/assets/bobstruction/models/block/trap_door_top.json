@@ -1,0 +1,8 @@
+{
+    "parent": "block/template_orientable_trapdoor_top",
+    "textures": {
+      "texture": "{side}",
+      "particle": "{particle}"
+    },
+    "render_type": "{render_type}"
+  }

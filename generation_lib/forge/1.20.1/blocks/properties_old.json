@@ -1,0 +1,164 @@
+{
+    "properties": {
+        "strength": {
+            "setup": ".strength(",
+            "end": ")",
+            "options": [
+                {
+                    "hardness": "{value}f",
+                    "required": true
+                },
+                {
+                    "resistance": ", {value}f",
+                    "required": true
+                }
+            ]
+        },
+        "friction": ".friction({value}f)",
+        "jump_factor": ".jumpFactor({value}f)",
+        "speed_factor": ".speedFactor({value}f)",
+        "luminance": ".lightLevel(s -> {value})",
+        "no_collision": ".noCollission()",
+        "emmisive_texture": ".hasPostProcess((bs, br, bp) -> true).emissiveRendering((bs, br, bp) -> true)",
+        "requires_correct_tool_for_drops": ".requiresCorrectToolForDrops()",
+        "random_model_offset": {
+            "setup": ".offsetType(OffsetType.",
+            "end": ")",
+            "options": [
+                {
+                    "xz": "XZ",
+                    "xyz": "XYZ"
+                }
+            ]
+        },
+        "has_transparency": ".noOcclusion()",
+        "sounds": {
+            "setup": ".sound(",
+            "end": ").strength(1f, 10f)",
+            "options": [
+                {
+                    "custom": "new ForgeSoundType(1.0f, 1.0f, \n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{break}\")), \n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{step}\")),\n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{place}\")), \n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{hit}\")),\n() -> ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation(\"{fall}\"))))",
+                    "ground": "SoundType.GRAVEL",
+                    "air": "SoundType.EMPTY",
+                    "wood": "SoundType.WOOD",
+                    "plant": "SoundType.GRASS",
+                    "lily_pads": "SoundType.LILY_PAD",
+                    "stone": "SoundType.STONE",
+                    "metal": "SoundType.METAL",
+                    "glass": "SoundType.GLASS",
+                    "cloth": "SoundType.WOOL",
+                    "sand": "SoundType.SAND",
+                    "snow": "SoundType.SNOW",
+                    "ladder": "SoundType.LADDER",
+                    "anvil": "SoundType.ANVIL",
+                    "slime": "SoundType.SLIME_BLOCK",
+                    "wet_grass": "SoundType.WET_GRASS",
+                    "coral": "SoundType.CORAL_BLOCK",
+                    "bamboo": "SoundType.BAMBOO",
+                    "bamboo_sapling": "SoundType.BAMBOO_SAPLING",
+                    "scaffolding": "SoundType.SCAFFOLDING",
+                    "sweet_berry_bush": "SoundType.SWEET_BERRY_BUSH",
+                    "crop": "SoundType.CROP",
+                    "stem": "SoundType.HARD_CROP",
+                    "vine": "SoundType.VINE",
+                    "nether_wart": "SoundType.NETHER_WART",
+                    "lantern": "SoundType.LANTERN",
+                    "honey": "SoundType.HONEY_BLOCK",
+                    "hyphae": "SoundType.STEM",
+                    "nylium": "SoundType.NYLIUM",
+                    "fungus": "SoundType.FUNGUS",
+                    "root": "SoundType.ROOTS",
+                    "shroomlight": "SoundType.SHROOMLIGHT",
+                    "nether_vine": "SoundType.WEEPING_VINES",
+                    "nether_vine_low_pitch": "SoundType.TWISTING_VINES",
+                    "soul_sand": "SoundType.SOUL_SAND",
+                    "soul_soil": "SoundType.SOUL_SOIL",
+                    "basalt": "SoundType.BASALT",
+                    "wart": "SoundType.WART_BLOCK",
+                    "netherrack": "SoundType.NETHERRACK",
+                    "nether_brick": "SoundType.NETHER_BRICKs",
+                    "nether_sprout": "SoundType.NETHER_SPROUTS",
+                    "nether_ore": "SoundType.NETHER_ORE",
+                    "bone": "SoundType.BONE_BLOCK",
+                    "netherite": "SoundType.NETHERITE_BLOCK",
+                    "ancient_debris": "SoundType.ANCIENT_DEBRIS",
+                    "lodestone": "SoundType.LODESTONE",
+                    "chain": "SoundType.CHAIN",
+                    "nether_gold_ore": "SoundType.NETHER_GOLD_ORE",
+                    "gilded_blackstone": "SoundType.GILDED_BLACKSTONE",
+                    "amethyst": "SoundType.AMETHYST_BLOCK",
+                    "amethyst_cluster": "SoundType.AMETHYST_CLUSTER",
+                    "azalea": "SoundType.AZALEA",
+                    "azalea_leaves": "SoundType.AZALEA_LEAVES",
+                    "big_drip_leaf": "SoundType.BIG_DRIP_LEAF",
+                    "candle": "SoundType.CANDLE",
+                    "calcite": "SoundType.CALCITE",
+                    "cave_vine": "SoundType.CAVE_VINES",
+                    "copper": "SoundType.COPPER",
+                    "deepslate": "SoundType.DEEPSLATE",
+                    "deepslate_bricks": "SoundType.DEEPSLATE_BRICKS",
+                    "deepslate_tile": "SoundType.DEEPSLATE_TILES",
+                    "dripstone_block": "SoundType.DRIPSTONE_BLOCK",
+                    "flowering_azalea": "SoundType.FLOWERING_AZALEA",
+                    "glow_lichen": "SoundType.GLOW_LICHEN",
+                    "hanging_roots": "SoundType.HANGING_ROOTS",
+                    "large_amethyst_bud": "SoundType.LARGE_AMETHYST_BUD",
+                    "medium_amethyst_bud": "SoundType.MEDIUM_AMETHYST_BUD",
+                    "moss_carpet": "SoundType.MOSS_CARPET",
+                    "pink_petals": "SoundType.PINK_PETALS",
+                    "moss": "SoundType.MOSS",
+                    "pointed_dripstone": "SoundType.POINTED_DRIPSTONE",
+                    "polished_deepslate": "SoundType.POLISHED_DEEPSLATE",
+                    "powder_snow": "SoundType.POWDER_SNOW",
+                    "rooted_dirt": "SoundType.ROOTED_DIRT",
+                    "sculk_sensor": "SoundType.SCULK_SENSOR",
+                    "sculk_catalyst": "SoundType.SCULK_CATALYST",
+                    "sculk": "SoundType.SCULK",
+                    "sculk_vein": "SoundType.SCULK_VEIN",
+                    "sculk_shrieker": "SoundType.SCULK_SHRIEKER",
+                    "small_amethyst_bud": "SoundType.SMALL_AMETHYST_BUD",
+                    "small_dripleaf": "SoundType.SMALL_DRIPLEAF",
+                    "spore_blossom": "SoundType.SPORE_BLOSSOM",
+                    "tuff": "SoundType.TUFF",
+                    "froglight": "SoundType.FROGLIGHT",
+                    "mangroove_roots": "SoundType.MANGROVE_ROOTS",
+                    "muddy_mangrove_roots": "SoundType.MUDY_MANGROVE_ROOTS",
+                    "mud": "SoundType.MUD",
+                    "mud_bricks": "SoundType.MUD_BRICKS",
+                    "packed_mud": "SoundType.PACKED_MUD",
+                    "bamboo_wood": "SoundType.BAMBOO_WOOD",
+                    "nether_wood": "SoundType.NETHER_WOOD",
+                    "cherry_wood": "SoundType.CHERRY_WOOD"
+                }
+            ]
+        },
+        "push_reaction":{
+            "setup":".pushReaction(PushReaction.",
+            "end":")",
+            "options":[
+                {
+                    "destroy":"DESTROY",
+                    "block":"BLOCK",
+                    "push_only":"PUSH_ONLY",
+                    "ignore":"IGNORE",
+                    "normal":"NORMAL"
+                }
+            ]
+        },
+        "no_break_particles":".noParticlesOnBreak()"
+    },
+    "overrides": {
+        "bounding_box": "public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {return Shapes.or({value});}",
+        "opacity": "public int getLightBlock(BlockState state, BlockGetter worldIn, BlockPos pos) {return {value};}",
+        "is_replaceable": "public boolean canBeReplaced(BlockState state, BlockPlaceContext context) {return context.getItemInHand().getItem() != this.asItem();}",
+        "can_sustain_plants": "public boolean canSustainPlant(BlockState state, BlockGetter world, BlockPos pos, Direction direction, IPlantable plantable) {return true;}",
+        "is_climbable": "public boolean isLadder(BlockState state, LevelReader world, BlockPos pos, LivingEntity entity) {return true;}",
+        "flammability": "public int getFlammability(BlockState state, BlockGetter world, BlockPos pos, Direction face) {return {value};}",
+        "fire_spread_speed": "public int getFireSpreadSpeed(BlockState state, BlockGetter world, BlockPos pos, Direction face) {return {value};}",
+        "connect_to_redstone": "public boolean canConnectRedstone(BlockState state, BlockGetter world, BlockPos pos, Direction side) {return true;}",
+        "emmit_redstone_signal": "public int getSignal(BlockState blockstate, BlockGetter blockAccess, BlockPos pos, Direction direction) {return {value};}",
+        "connected_sides": "public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {return adjacentBlockState.getBlock() == this ? true : super.skipRendering(state, adjacentBlockState, side);}",
+        "hide_fluid_when_submerged": "public boolean shouldDisplayFluidOverlay(BlockState state, BlockAndTintGetter world, BlockPos pos, FluidState fluidstate) {return true;}"
+    },
+    "#comment": "box(0, 0, 0, 16.1, 16, 16), box(0, 0, 0, 16, 16, 16)"
+}

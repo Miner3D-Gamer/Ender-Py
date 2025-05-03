@@ -1,0 +1,21 @@
+{
+    "java_path": [
+        {
+            "file": "Config.java",
+            "offset": "",
+            "format": true
+        }
+    ],
+    "surface": [
+        {
+            "file": "build.gradle",
+            "offset": "",
+            "format": false
+        },
+        {
+            "file": "gradle.properties",
+            "offset": "",
+            "format": true
+        }
+    ]
+}
