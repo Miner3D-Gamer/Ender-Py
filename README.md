@@ -29,9 +29,7 @@ Library in the 'generation_lib' folder
 
 ### To be added:
 
-## Missing:
-
-### (Unsorted)
+(Unsorted)
 
 - Proper loot table support
 - Procedure support (visual -> json -> java) -> Events
