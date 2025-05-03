@@ -29,7 +29,7 @@ Library in the 'generation_lib' folder
 
 ### To be added:
 
-# Missing:
+## Missing:
 
 ### (Unsorted)
 
@@ -74,5 +74,19 @@ Library in the 'generation_lib' folder
 - Damage types
 - Commands
 - Config (File/UI, Cloth?)
-- Support for popular mods like Create/Serene Seasons/Curious API
+- Support for popular mods
 - Support for custom colors
+- Multiblocks
+
+### Mods to be supported by default:
+
+- Create
+- Serene Seasons
+- Curious API
+- JEI/REI/MEI
+- Farmer's Delight
+- GeckoLib
+- Tinkers' Construct
+- FTB Quests
+- Quark
+- I like wood
