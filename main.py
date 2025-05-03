@@ -1,7 +1,7 @@
-import generation_lib
+import ender_py
 import json
 
-bobstruction = generation_lib.Mod(
+bobstruction = ender_py.Mod(
     internal_id="com.miner.bobstruction",
     public_id="bobstruction",
     name="Bobstruction",
@@ -13,7 +13,7 @@ bobstruction = generation_lib.Mod(
     external_packs=["./external_resources"],
 )
 
-set = generation_lib.presets.wood_set(
+set = ender_py.presets.wood_set(
     name="test",
     textures={
         "log_side": "test_log_side",
@@ -34,15 +34,15 @@ set = generation_lib.presets.wood_set(
 
 bobstruction.add_components(set)
 bobstruction.add_component(
-    component=generation_lib.components.CreativeTab(
+    component=ender_py.components.CreativeTab(
         name="Custom Tab", icon_item="minecraft:diamond", items=set
     ),
     id="creat",
 )
 
-pro_str = generation_lib.shared.get_file_contents("generation_lib/strip_wood.json")
+pro_str = ender_py.shared.get_file_contents("generation_lib/strip_wood.json")
 bobstruction.add_component(
-    component=generation_lib.components.Procedure(
+    component=ender_py.components.Procedure(
         event="block_right_click",
         content=pro_str,
     ),

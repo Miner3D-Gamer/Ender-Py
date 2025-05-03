@@ -1,6 +1,6 @@
 strip_wood_procedure = '[{"action":"if","condition":{"action":"is_itemstack_tagged_with","itemstack":{"action":"get_main_hand","entity":{"action":"get_event_entity"}},"tag":"axe"},"code":[{"action":"replace_block_and_keep_blockstate_and_nbt","block":{"action":"get_block_by_id","id":"minecraft:stripped_oak_log"},"pos":{"action":"get_event_pos"}}]}]'
 import json
-from generation_lib.procedures import ProcedureInternal
+from ender_py.procedures import ProcedureInternal
 
 
 procedure = json.loads(strip_wood_procedure)

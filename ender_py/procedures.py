@@ -1,5 +1,5 @@
 import json, os
-from generation_lib.shared import (
+from ender_py.shared import (
     log,
     FATAL,
     ERROR,
@@ -247,7 +247,9 @@ class ProcedureInternal:
                             ...
                         elif isinstance(allowed, str):
                             if allowed == "str":
-                                if isinstance(block[singular_expected_input["name"]], str):
+                                if isinstance(
+                                    block[singular_expected_input["name"]], str
+                                ):
                                     given = {
                                         "file_contents": f'"{block[singular_expected_input["name"]]}"',
                                         "required_imports": b["required_imports"],
@@ -259,12 +261,11 @@ class ProcedureInternal:
                                         f"Expected a string but got {block[singular_expected_input['name']]} in block {block['action']}",
                                     )
                             else:
-                                log(
-                                    FATAL, "Expected allowed to be str"
-                                )
+                                log(FATAL, "Expected allowed to be str")
                         else:
                             log(
-                                FATAL, "Expected 'literal' to be a string, dict, or list"
+                                FATAL,
+                                "Expected 'literal' to be a string, dict, or list",
                             )
                     else:
                         next = block.get(singular_expected_input["name"])
@@ -319,7 +320,7 @@ class ProcedureInternal:
                         contents,
                         {singular_expected_input["name"]: given["file_contents"]},
                     )
-                #print(b["required_imports"]
+                # print(b["required_imports"]
                 #    + given["required_imports"])
                 return {
                     "required_imports": b["required_imports"]
@@ -331,7 +332,7 @@ class ProcedureInternal:
                 }
         log(FATAL, f"Block {block} not found")
 
-    def handle_event(self, procedure:list, requested_version: str, event:str):
+    def handle_event(self, procedure: list, requested_version: str, event: str):
         """
         return: Tuple[Event code, required imports, context code]
         """
@@ -339,14 +340,18 @@ class ProcedureInternal:
         code = ""
         current_required_contexts = []
         if not isinstance(procedure, list):
-            log(FATAL, "Procedure is not list but instead of type %s (%s)"%(type(procedure), procedure))
+            log(
+                FATAL,
+                "Procedure is not list but instead of type %s (%s)"
+                % (type(procedure), procedure),
+            )
         for block in procedure:
             returned = self.handle_block(block, requested_version, self.blocks)
             code += returned["file_contents"]
             current_required_contexts.extend(returned["required_contexts"])
             self.required_imports.extend(returned["required_imports"])
 
-        custom_contexts:dict[str, str] = {}
+        custom_contexts: dict[str, str] = {}
         while current_required_contexts != []:
             current_required_contexts = [
                 x for x in current_required_contexts if x not in self.current_contexts
@@ -368,6 +373,5 @@ class ProcedureInternal:
             self.event_code,
             {"code": code},
         )
-        
 
         return final_code, custom_contexts, list(set(self.required_imports))

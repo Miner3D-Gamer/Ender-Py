@@ -1,6 +1,6 @@
 # A little project that strives to convert python-to-minecraft
 
-Library in the 'generation_lib' folder
+Library in the 'ender_py' folder
 
 ### Development is halted until my other project, 'Procedure Crafter', is working. This side project can generate code in a visual workspace and is crucial for creating custom java code
 
