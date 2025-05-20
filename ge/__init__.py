@@ -1,10 +1,12 @@
-"""The opposite of RregEx; GenEx instead of validating/parsing strings, it generates them. I have not yet tested it extensively."""
+"""The opposite of RegEx; GenEx instead of validating/parsing strings, it generates them. I have not yet tested it extensively."""
 
 from .parsing import split_genex_into_actions
 from .execute import Generator
 
 
-def GenEx(string: str, custom_functions: dict = {}, blacklisted_functions: list[str] = []):
+def GenEx(
+    string: str, custom_functions: dict = {}, blacklisted_functions: list[str] = []
+):
     return Generator(
         split_genex_into_actions(string), custom_functions, blacklisted_functions
     ).generate()
