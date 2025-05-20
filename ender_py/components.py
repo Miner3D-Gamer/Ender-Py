@@ -3,6 +3,7 @@ from .one_off_functions import generate_texture
 from .shared import export_class, get_file_contents, log, FATAL, ERROR, WARNING, INFO
 import os, json
 
+
 class VoxelShape:
     def __init__(self, min_x, min_y, min_z, max_x, max_y, max_z) -> None:
         self.min_x = min_x
@@ -40,7 +41,7 @@ class Recipe:
     ) -> None:
         self.result = result
         self.result_count = result_count
-        
+
         self.TYPE = "recipe"
 
 
@@ -175,7 +176,9 @@ ROTATION: TypeAlias = Literal[
     "none", "log", "blockface", "y_blockface", "playerside", "y_playerside"
 ]
 
-strip_wood_procedure = '[{"action":"if","condition":{"action":"is_itemstack_tagged","itemstack":{"action":"get_main_hand","entity":{"action":"get_event_entity"}},"tag":"axe"},"code":[{"action":"set_block","block":{"action":"get_block_by_id","id":"{block_id}"},"pos":{"action":"get_event_pos"}}]}]'
+# strip_wood_procedure = get_file_contents(
+#     os.path.join(os.path.dirname(__file__), "default_procedures", "strip_wood.json")
+# )
 
 
 class Block:
@@ -393,7 +396,7 @@ class Procedure:
                     )
         else:
             new = content
-        self.content:list = new
+        self.content: list = new
         self.TYPE = "procedure"
 
 

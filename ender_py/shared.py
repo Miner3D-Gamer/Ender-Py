@@ -2,6 +2,15 @@ from typing import overload, NoReturn, Literal
 import os
 
 
+import traceback
+
+
+def print_traceback(traces_to_skip: int = 2):
+    tb = traceback.extract_stack()[:-traces_to_skip]  # I love magic functions
+    formatted = traceback.format_list(tb)
+    print("[ERROR TRACEBACK]:\n>" + ">".join(formatted))
+
+
 @overload
 def log(level: Literal[4], message: str) -> NoReturn: ...
 
@@ -21,6 +30,7 @@ def log(level: int, message: str):
         print(f"[ERROR] {message}")
     elif level == 4:
         print(f"[FATAL ERROR] {message}")
+        print_traceback()
         quit(1)
 
 
@@ -42,15 +52,18 @@ def get_file_contents(path: str) -> str:
     with open(path, "r") as f:
         return f.read()
 
+
 def replace(string: str, what_to: dict[str, str]):
     for key, value in what_to.items():
         string = string.replace("{" + str(key) + "}", value)
     return string
 
+
 def dynamic_serializer(obj):
     if hasattr(obj, "__json__"):
         return obj.__json__()
     raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
 
 import inspect
 

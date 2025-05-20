@@ -1,0 +1,1 @@
+isEntityGamemode({entity}, {gamemode})

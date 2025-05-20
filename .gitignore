@@ -9,3 +9,7 @@ ender_py/__pycache__/presets.cpython-311.pyc
 ender_py/__pycache__/procedures.cpython-311.pyc
 ender_py/__pycache__/shared.cpython-311.pyc
 ender_py/__pycache__/__init__.cpython-311.pyc
+ge/__pycache__/check.cpython-311.pyc
+ge/__pycache__/execute.cpython-311.pyc
+ge/__pycache__/parsing.cpython-311.pyc
+ge/__pycache__/__init__.cpython-311.pyc

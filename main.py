@@ -40,7 +40,9 @@ bobstruction.add_component(
     id="creat",
 )
 
-pro_str = ender_py.shared.get_file_contents("ender_py/strip_wood.json")
+pro_str = ender_py.shared.get_file_contents(
+    "ender_py/default_procedures/strip_test_log.json"
+)
 bobstruction.add_component(
     component=ender_py.components.Procedure(
         event="block_right_click",

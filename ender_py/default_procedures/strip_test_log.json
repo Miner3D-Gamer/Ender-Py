@@ -1,0 +1,106 @@
+[
+    {
+        "action": "if",
+        "condition": {
+            "action": "and",
+            "condition": {
+                "action": "is_itemstack_tagged_with",
+                "itemstack": {
+                    "action": "get_main_hand",
+                    "entity": {
+                        "action": "get_event_entity"
+                    }
+                },
+                "tag": "axe"
+            },
+            "condition2": {
+                "action": "compare_blocks",
+                "block1": {
+                    "action": "get_block_from_pos",
+                    "pos": {
+                        "action": "get_event_pos"
+                    },
+                    "dimension": {
+                        "action": "get_dimension_of_event"
+                    }
+                },
+                "block2": {
+                    "action": "get_block_by_id",
+                    "id": "bobstruction:test_log"
+                }
+            }
+        },
+        "code": [
+            {
+                "action": "replace_block_and_keep_blockstate_and_nbt",
+                "block": {
+                    "action": "get_block_by_id",
+                    "id": "bobstruction:stripped_test_log"
+                },
+                "pos": {
+                    "action": "get_event_pos"
+                },
+                "dimension": {
+                    "action": "get_dimension_of_event"
+                }
+            },
+            {
+                "action": "if",
+                "condition": {
+                    "action": "not",
+                    "condition": {
+                        "action": "is_entity_in_gamemode",
+                        "entity": {
+                            "action": "get_event_entity"
+                        },
+                        "gamemode": "creative"
+                    }
+                },
+                "code": [
+                    {
+                        "action": "if_else",
+                        "condition": {
+                            "action": "is_dimension_client_side",
+                            "dimension": {
+                                "action": "get_dimension_of_event"
+                            }
+                        },
+                        "code": [
+                            {
+                                "action": "swing",
+                                "target": {
+                                    "action": "get_event_entity"
+                                },
+                                "hand": "mainhand"
+                            }
+                        ],
+                        "else_code": [
+                            {
+                                "action": "set_itemstack_damage",
+                                "itemstack": {
+                                    "action": "get_main_hand",
+                                    "entity": {
+                                        "action": "get_event_entity"
+                                    }
+                                },
+                                "int": {
+                                    "action": "plus",
+                                    "val1": {
+                                        "action": "get_itemstack_damage",
+                                        "itemstack": {
+                                            "action": "get_main_hand",
+                                            "entity": {
+                                                "action": "get_event_entity"
+                                            }
+                                        }
+                                    },
+                                    "val2": "1"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]

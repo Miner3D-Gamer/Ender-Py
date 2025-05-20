@@ -8,11 +8,11 @@
         {
             "type": "action",
             "name": "set_block",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/actions/set_block.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/actions/set_block.java"
+                }
             },
-            "required_imports": [],
-            "required_contexts": [],
             "inputs": [
                 {
                     "type": "dimension",
@@ -32,13 +32,14 @@
         {
             "type": "action",
             "name": "swing",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/players/actions/swing.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/players/actions/swing.java",
+                    "required_imports": [
+                        "net.minecraft.world.InteractionHand"
+                    ]
+                }
             },
-            "required_imports": [
-                "net.minecraft.world.InteractionHand"
-            ],
-            "required_contexts": [],
             "inputs": [
                 {
                     "type": "entity",
@@ -58,17 +59,19 @@
         {
             "type": "action",
             "name": "replace_block_and_keep_blockstate_and_nbt",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/actions/replace_block.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/actions/replace_block.java",
+                    "required_imports": [
+                        "net.minecraft.nbt.CompoundTag",
+                        "net.minecraft.world.level.block.entity.BlockEntity",
+                        "net.minecraft.world.level.block.Block"
+                    ],
+                    "required_contexts": [
+                        "copy_block_properties"
+                    ]
+                }
             },
-            "required_imports": [
-                "net.minecraft.nbt.CompoundTag",
-                "net.minecraft.world.level.block.entity.BlockEntity",
-                "net.minecraft.world.level.block.Block"
-            ],
-            "required_contexts": [
-                "copy_block_properties"
-            ],
             "inputs": [
                 {
                     "type": "dimension",
@@ -86,15 +89,47 @@
             "output": "block"
         },
         {
+            "name": "is_entity_in_gamemode",
+            "type": "inline",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/players/data/is_entity_in_gamemode.java",
+                    "required_contexts": [
+                        "is_entity_in_gamemode_helper"
+                    ],
+                    "required_imports": [
+                        "net.minecraft.world.level.GameType"
+                    ]
+                }
+            },
+            "inputs": [
+                {
+                    "type": "entity",
+                    "name": "entity"
+                },
+                {
+                    "name": "gamemode",
+                    "type": "literal",
+                    "expected": {
+                        "survival": "GameType.SURVIVAL",
+                        "creative": "GameType.CREATIVE",
+                        "adventure": "GameType.ADVENTURE"
+                    }
+                }
+            ],
+            "output": "boolean"
+        },
+        {
             "type": "event",
             "name": "block_right_click",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/events/on_block_right_click.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/events/on_block_right_click.java",
+                    "required_imports": [
+                        "net.minecraftforge.event.entity.player.PlayerInteractEvent"
+                    ]
+                }
             },
-            "required_imports": [
-                "net.minecraftforge.event.entity.player.PlayerInteractEvent",
-                "net.minecraft.world.level.Level"
-            ],
             "event_type": "cancelable",
             "given_contexts": [
                 "event"
@@ -102,38 +137,56 @@
         },
         {
             "type": "context",
-            "name": "copy_block_properties",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/contexts/copy_block_properties.java"
-            },
-            "required_imports": [
-                "net.minecraft.world.level.block.state.BlockState"
-            ],
-            "required_contexts": [
-                "set_properties"
-            ]
+            "name": "set_properties",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/contexts/set_properties.java",
+                    "required_imports": [
+                        "net.minecraft.world.level.block.state.properties.Property"
+                    ]
+                }
+            }
         },
         {
             "type": "context",
-            "name": "set_properties",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/contexts/set_properties.java"
-            },
-            "required_imports": [
-                "net.minecraft.world.level.block.state.properties.Property"
-            ],
-            "required_contexts": []
+            "name": "copy_block_properties",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/contexts/copy_block_properties.java",
+                    "required_imports": [
+                        "net.minecraft.world.level.block.state.BlockState"
+                    ],
+                    "required_contexts": [
+                        "set_properties"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "context",
+            "name": "is_entity_in_gamemode_helper",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/contexts/is_entity_gamemode.java",
+                    "required_imports": [
+                        "net.minecraft.world.entity.Entity",
+                        "net.minecraft.world.level.GameType",
+                        "net.minecraft.server.level.ServerPlayer"
+                    ]
+                }
+            }
         },
         {
             "type": "inline",
             "name": "pos",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/conversion/pos_from_int.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/conversion/pos_from_int.java",
+                    "required_imports": [
+                        "net.minecraft.core.BlockPos"
+                    ]
+                }
             },
-            "required_imports": [
-                "net.minecraft.core.BlockPos"
-            ],
-            "required_contexts": [],
             "inputs": [
                 {
                     "type": "int",
@@ -153,14 +206,15 @@
         {
             "type": "inline",
             "name": "get_block_by_id",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/data/get_block_by_id.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/data/get_block_by_id.java",
+                    "required_imports": [
+                        "net.minecraftforge.registries.ForgeRegistries",
+                        "net.minecraft.resources.ResourceLocation"
+                    ]
+                }
             },
-            "required_imports": [
-                "net.minecraftforge.registries.ForgeRegistries",
-                "net.minecraft.resources.ResourceLocation"
-            ],
-            "required_contexts": [],
             "output": "block",
             "inputs": [
                 {
@@ -172,13 +226,14 @@
         {
             "type": "inline",
             "name": "get_id_of_block",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/data/get_id_of_block.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/data/get_id_of_block.java",
+                    "required_imports": [
+                        "net.minecraftforge.registries.ForgeRegistries"
+                    ]
+                }
             },
-            "required_imports": [
-                "net.minecraftforge.registries.ForgeRegistries"
-            ],
-            "required_contexts": [],
             "output": "str",
             "inputs": [
                 {
@@ -190,11 +245,11 @@
         {
             "type": "inline",
             "name": "and",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/flow_control/and.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/and.java"
+                }
             },
-            "required_imports": [],
-            "required_contexts": [],
             "output": "boolean",
             "inputs": [
                 {
@@ -209,12 +264,44 @@
         },
         {
             "type": "inline",
-            "name": "string_equals",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/strings/equals.java"
+            "name": "not",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/not.java"
+                }
             },
-            "required_imports": [],
-            "required_contexts": [],
+            "output": "boolean",
+            "inputs": [
+                {
+                    "type": "boolean",
+                    "name": "condition"
+                }
+            ]
+        },
+        {
+            "type": "inline",
+            "name": "is_dimension_client_side",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/is_client_side.java"
+                }
+            },
+            "output": "boolean",
+            "inputs": [
+                {
+                    "type": "dimension",
+                    "name": "dimension"
+                }
+            ]
+        },
+        {
+            "type": "inline",
+            "name": "string_equals",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/strings/equals.java"
+                }
+            },
             "output": "boolean",
             "inputs": [
                 {
@@ -230,11 +317,11 @@
         {
             "type": "inline",
             "name": "get_block_from_pos",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/data/get_block_in_pos.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/data/get_block_in_pos.java"
+                }
             },
-            "required_imports": [],
-            "required_contexts": [],
             "output": "block",
             "inputs": [
                 {
@@ -250,24 +337,26 @@
         {
             "type": "inline",
             "name": "get_dimension_of_event",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/flow_control/get_dimension_of_event.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/get_dimension_of_event.java",
+                    "required_imports": [],
+                    "required_contexts": [
+                        "event"
+                    ]
+                }
             },
-            "required_imports": [],
-            "required_contexts": [
-                "event"
-            ],
             "output": "dimension",
             "inputs": []
         },
         {
             "type": "inline",
             "name": "compare_blocks",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/data/block_compare.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/data/block_compare.java"
+                }
             },
-            "required_imports": [],
-            "required_contexts": [],
             "output": "boolean",
             "inputs": [
                 {
@@ -283,24 +372,26 @@
         {
             "type": "inline",
             "name": "get_event_pos",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/flow_control/get_event_pos.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/get_event_pos.java",
+                    "required_imports": [],
+                    "required_contexts": [
+                        "event"
+                    ]
+                }
             },
-            "required_imports": [],
-            "required_contexts": [
-                "event"
-            ],
             "output": "pos",
             "inputs": []
         },
         {
             "type": "inline",
             "name": "get_int_from_pos",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/blocks/data/get_block_in_pos.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/blocks/data/get_block_in_pos.java"
+                }
             },
-            "required_imports": [],
-            "required_contexts": [],
             "output": "int",
             "inputs": [
                 {
@@ -320,12 +411,12 @@
         },
         {
             "type": "inline",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/entities/data/get_main_hand.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/entities/data/get_main_hand.java"
+                }
             },
             "name": "get_main_hand",
-            "required_imports": [],
-            "required_contexts": [],
             "output": "itemstack",
             "inputs": [
                 {
@@ -336,26 +427,30 @@
         },
         {
             "type": "inline",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/entities/data/get_event_entity.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/entities/data/get_event_entity.java",
+                    "required_imports": [],
+                    "required_contexts": [
+                        "event"
+                    ]
+                }
             },
             "name": "get_event_entity",
-            "required_imports": [],
-            "required_contexts": [
-                "event"
-            ],
-            "output": "entity"
+            "output": "entity",
+            "inputs": []
         },
         {
             "type": "inline",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/items/data/is_tagged_with.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/items/data/is_tagged_with.java",
+                    "required_imports": [
+                        "net.minecraft.tags.ItemTags"
+                    ]
+                }
             },
             "name": "is_itemstack_tagged_with",
-            "required_imports": [
-                "net.minecraft.tags.ItemTags"
-            ],
-            "required_contexts": [],
             "output": "boolean",
             "inputs": [
                 {
@@ -374,12 +469,12 @@
         },
         {
             "type": "inline",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/items/data/get_damage.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/items/data/get_damage.java"
+                }
             },
             "name": "get_itemstack_damage",
-            "required_imports": [],
-            "required_contexts": [],
             "output": "int",
             "inputs": [
                 {
@@ -390,12 +485,12 @@
         },
         {
             "type": "inline",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/math/minus.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/math/minus.java"
+                }
             },
             "name": "minus",
-            "required_imports": [],
-            "required_contexts": [],
             "output": "int",
             "inputs": [
                 {
@@ -410,12 +505,12 @@
         },
         {
             "type": "inline",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/math/plus.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/math/plus.java"
+                }
             },
             "name": "plus",
-            "required_imports": [],
-            "required_contexts": [],
             "output": "int",
             "inputs": [
                 {
@@ -430,12 +525,12 @@
         },
         {
             "type": "action",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/items/actions/set_damage.java"
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/items/actions/set_damage.java"
+                }
             },
             "name": "set_itemstack_damage",
-            "required_imports": [],
-            "required_contexts": [],
             "output": "none",
             "inputs": [
                 {
@@ -450,29 +545,34 @@
         },
         {
             "type": "inline",
-            "name": "not_client_side",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/flow_control/not_client_side.java"
-            },
-            "required_imports": [],
-            "required_contexts": [],
-            "output": "boolean",
-            "inputs": [
-                {
-                    "type": "dimension",
-                    "name": "dimension"
+            "name": "true",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/true.java"
                 }
-            ]
+            },
+            "output": "boolean",
+            "inputs": []
         },
         {
-            "type": "hugging",
-            "name": "if",
-            "file": {
-                "forge-1.20.1": "forge-1.20.1/flow_control/if.java"
+            "type": "inline",
+            "name": "false",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/false.java"
+                }
             },
-            "dynamic": true,
-            "required_imports": [],
-            "required_contexts": [],
+            "output": "boolean",
+            "inputs": []
+        },
+        {
+            "type": "action",
+            "name": "if",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/if.java"
+                }
+            },
             "inputs": [
                 {
                     "type": "boolean",
@@ -482,18 +582,41 @@
                     "type": "none",
                     "name": "code"
                 }
-            ]
+            ],
+            "output": []
+        },
+        {
+            "type": "action",
+            "name": "if_else",
+            "versions": {
+                "forge-1.20.1": {
+                    "file": "forge-1.20.1/flow_control/if_else.java"
+                }
+            },
+            "inputs": [
+                {
+                    "type": "boolean",
+                    "name": "condition"
+                },
+                {
+                    "type": "none",
+                    "name": "code"
+                },
+                {
+                    "type": "none",
+                    "name": "else_code"
+                }
+            ],
+            "output": []
         }
     ],
     "deprecated": [
         {
             "type": "inline",
             "name": "string_literal",
-            "file": {
+            "versions": {
                 "forge-1.20.1": "forge-1.20.1/strings/literal.java"
             },
-            "required_imports": [],
-            "required_contexts": [],
             "output": "str",
             "inputs": [
                 {
