@@ -1,8 +1,0 @@
-{
-    "parent": "block/template_fence_gate_wall_open",
-    "textures": {
-      "particle": "bobstruction:block/test_planks",
-      "texture": "bobstruction:block/test_planks"
-    },
-    "render_type": "solid"
-  }

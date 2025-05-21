@@ -1,5 +1,5 @@
 {
-  "parent": "block/wall_inventory",
+  "parent": "block/template_wall_post",
   "textures": {
     "wall": "{side}",
     "particle": "{particle}"

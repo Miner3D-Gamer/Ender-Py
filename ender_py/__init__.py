@@ -8,6 +8,14 @@ import re
 from pathlib import Path
 import time
 
+import sys
+
+main_path = sys.modules["__main__"].__file__
+if main_path:
+    currect_dir = os.path.dirname(os.path.abspath(main_path))
+else:
+    currect_dir = os.getcwd()
+
 
 from .components import (
     COMPONENT_TYPE,
@@ -17,6 +25,7 @@ from .components import (
     LootTable,
     VoxelShape,
     Procedure,
+    Recipe,
 )
 from .shared import (
     log,
@@ -32,6 +41,13 @@ from .shared import (
 )
 from .one_off_functions import get_closest_map_color, import_module_from_full_path
 from .procedures import ProcedureInternal
+
+
+def add_mod_id_if_missing(id: str, mod: "Mod"):
+
+    if id.__contains__(":"):
+        return id
+    return f"{mod.id}:{id}"
 
 
 def is_valid_internal_mod_id(id: str):
@@ -612,7 +628,7 @@ def get_properties(component: COMPONENT_TYPE, path: str):
                 break
             else:
                 ########################################################## IF IT HAS ['options'],  CHECK THE VALUE OF 'option'
-                # print(property == option, option)
+                # tf is OPTION?
                 if property == option:
                     if properties[property].get("options", []) == []:
                         if handle_hit(
@@ -1155,6 +1171,7 @@ class Mod:
             "translations": {},
             "internal_loot_tables": [],
             "procedures": {},
+            "recipes": {},
         }
 
         for component_id, component in self.components.items():
@@ -1173,6 +1190,8 @@ class Mod:
                 # actions["internal_items"]
             elif isinstance(component, Procedure):
                 actions["procedures"].update({component_id: component})
+            elif isinstance(component, Recipe):
+                actions["recipes"].update({component_id: component})
             else:
                 raise Exception("Unknown component type '%s" % type(component))
 
@@ -1552,6 +1571,7 @@ class Mod:
                 "leaves": jp(block_state_path_template, "cube.json"),
                 "pressure_plate": jp(block_state_path_template, "pressure_plate.json"),
                 "log": jp(block_state_path_template, "log.json"),
+                "wall": jp(block_state_path_template, "wall.json"),
             }
 
             for block_id, block in actions["internal_blocks"].items():
@@ -1596,6 +1616,7 @@ class Mod:
                         + ".json"
                     )
                     if not os.path.exists(model_path):
+                        old = model_path
                         model_path = (
                             jp(
                                 template_path,
@@ -1606,6 +1627,11 @@ class Mod:
                                 ),
                             )
                             + ".json"
+                        )
+                    if not os.path.exists(model_path):
+                        log(
+                            FATAL,
+                            f"Unable to find suitable model for block {self.id}, tried following paths: \n>{old}\n>{model_path}",
                         )
 
                     model_data = get_file_contents(model_path)
@@ -1669,6 +1695,8 @@ class Mod:
                         if parent:
                             ### ARE YOU SURE THIS WILL WORK?
                             # I HAVE NO IDEA
+
+                            # HAHA NOPE IT DOES NOT
                             block_model_output_path = replace(
                                 parent,
                                 {
@@ -1692,14 +1720,37 @@ class Mod:
                                     },
                                 ).replace(":", "/models/")
 
-                                item_model_data = replace(
-                                    get_file_contents(
+                                model_path = (
+                                    jp(
+                                        template_path,
+                                        "assets",
+                                        block_model_input_path,
+                                    )
+                                    + ".json"
+                                )
+                                if not os.path.exists(model_path):
+                                    model_path = (
                                         jp(
                                             template_path,
                                             "assets",
-                                            block_model_input_path,
+                                            os.path.dirname(block_model_input_path),
+                                            "cube",
                                         )
                                         + ".json"
+                                    )
+                                    if not os.path.exists(model_path):
+                                        log(FATAL, "Cannot get item model path :(")
+                                    else:
+                                        log(
+                                            WARNING,
+                                            "Unable to find item model for %s, using default cube instead"
+                                            % item_id,
+                                        )
+
+                                item_model_data = replace(
+                                    get_file_contents(
+                                        model_path,
+                                        info="Getting item model",
                                     ),
                                     combine_dicts(item.block_item_textures, {"mod_id": display_item_mod_id}),  # type: ignore
                                 )
@@ -1792,6 +1843,20 @@ class Mod:
                     }
 
                     write_to_file(tag_path, json.dumps(_))
+
+            for key, i in actions["recipes"].items():
+                i: Recipe
+                new_recipe_path = jp(
+                    data_path,
+                    self.id,
+                    "recipes",
+                    i.recipe_type,
+                    f"{key}.json",
+                )
+                recipe = i.generate(self)
+                write_to_file(new_recipe_path, recipe)
+
+            ### EVERYTHING IS DONE -> COPY CACHE TO MDK
 
             shutil.rmtree(resource_path)
             shutil.copytree(pack_path, resource_path)

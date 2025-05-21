@@ -1,8 +1,0 @@
-{
-    "parent": "block/fence_post",
-    "textures": {
-      "texture": "bobstruction:block/test_planks",
-      "particle": "bobstruction:block/test_planks"
-    },
-    "render_type": "solid"
-  }

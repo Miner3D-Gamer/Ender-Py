@@ -1,7 +1,42 @@
-from typing import Optional, TypeAlias, Union, Literal, NoReturn, Any, Tuple, List
+from typing import (
+    Optional,
+    TypeAlias,
+    Union,
+    Literal,
+    NoReturn,
+    Any,
+    Tuple,
+    List,
+    Iterable,
+    TypeAlias,
+    TypedDict,
+)
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import Mod
+
 from .one_off_functions import generate_texture
-from .shared import export_class, get_file_contents, log, FATAL, ERROR, WARNING, INFO
+from .shared import (
+    export_class,
+    get_file_contents,
+    log,
+    FATAL,
+    ERROR,
+    WARNING,
+    INFO,
+    add_mod_id_if_missing,
+    texture_type,
+)
 import os, json
+
+
+Unused: TypeAlias = None
+
+unique_characters = get_file_contents(
+    os.path.join(os.path.dirname(__file__), "unique.txt")
+)
 
 
 class VoxelShape:
@@ -22,17 +57,9 @@ class VoxelShape:
         return export_class(self)
 
 
-class RecipeItem:
-    def __init__(
-        self, name: str, count: int = 1, components: Optional[dict[str, str]] = None
-    ) -> None:
-        self.name = name
-        self.count = count
-        self.components = components
-        self.TYPE = "recipe_item"
-
-
 class Recipe:
+    __slots__ = ["result", "result_count", "TYPE", "recipe_type"]
+
     def __init__(
         self,
         *,
@@ -41,25 +68,90 @@ class Recipe:
     ) -> None:
         self.result = result
         self.result_count = result_count
+        self.recipe_type = "unset"
 
         self.TYPE = "recipe"
 
+    def generate(self, mod: "Mod") -> str:
+        raise NotImplementedError(
+            "This class is a template to be used by other classes that inherit from it"
+        )
+
+
+class RecipeItemTag:
+    def __init__(self, tag: str) -> None:
+        self.tag = tag
+
 
 class RecipeCrafting(Recipe):
+    __slots__ = [
+        "ingredients",
+        "TYPE",
+        "condition",
+        "result_count",
+        "result",
+        "category",
+    ]
+
     def __init__(
         self,
         *,
-        result: str,
-        result_count: int = 1,
-        shape: Optional[str] = None,
-        ingredients: Optional[dict[str, Union[str, list[str]]] | list[str]] = None,
-        condition=None,
+        result: "str",
+        ingredients: "list[list[str  | None | RecipeItemTag]]",
+        result_count: int,
+        category: Optional[str] = None,
+        _condition: Unused = None,
     ) -> None:
         super().__init__(result=result, result_count=result_count)
-
-        self.shape = shape
+        self.recipe_type = "crafting_shaped"
+        self.category = category
         self.ingredients = ingredients
         self.TYPE = "recipe_crafting"
+
+    def generate(self, mod: "Mod"):
+        default = {
+            "type": "minecraft:crafting_shaped",
+            "pattern": [],
+            "key": {},
+            "result": {
+                "item": add_mod_id_if_missing(self.result, mod),
+                "count": self.result_count,
+            },
+        }
+        if self.category:
+            default["category"] = self.category
+        key_insert = {"item": "minecraft:polished_granite"}
+        unique = set()
+        for y in self.ingredients:
+            for x in y:
+                if x:
+                    unique.add(x)
+        unique = list(unique)
+
+        new = []
+        for y in self.ingredients:
+            temp = ""
+            for x in y:
+                if x:
+                    temp += unique_characters[unique.index(x)]
+                else:
+                    temp += " "
+            new.append(temp)
+
+        default["pattern"] = new
+        keys = {}
+        for x in range(len(unique)):
+            keys[unique_characters[x]] = key_insert.copy()
+            if isinstance(unique[x], RecipeItemTag):
+                keys[unique_characters[x]]["tag"] = add_mod_id_if_missing(
+                    unique[x].tag, mod
+                )
+            else:
+                keys[unique_characters[x]]["item"] = add_mod_id_if_missing(
+                    unique[x], mod
+                )
+        default["key"] = keys
+        return json.dumps(default, indent=4)
 
 
 class Item:
@@ -156,7 +248,7 @@ class CreativeTab:
         *,
         name: str,
         icon_item: str,
-        items: list[str] | dict[str, Any],
+        items: list[str] | dict[str, Any] | Iterable[str],
         hide_title: bool = False,
         no_scrollbar: bool = False,
         alignment_right: bool = True,
@@ -168,7 +260,16 @@ class CreativeTab:
         self.hide_title = hide_title
         self.no_scrollbar = no_scrollbar
         self.alignment_right = alignment_right
-        self.items = [x for x in items]
+
+        if isinstance(items, dict):
+            new_items = []
+            for key, value in items.items():
+                if isinstance(value, (Item, Block)):
+                    new_items.append(key)
+        else:
+            new_items = items
+
+        self.items = [x for x in new_items]
         self.TYPE = "creative_tab"
 
 
@@ -179,6 +280,18 @@ ROTATION: TypeAlias = Literal[
 # strip_wood_procedure = get_file_contents(
 #     os.path.join(os.path.dirname(__file__), "default_procedures", "strip_wood.json")
 # )
+
+
+class Texture(TypedDict):
+    top: str
+    bottom: str
+    north: str
+    east: str
+    south: str
+    west: str
+    particle: str
+    side: str
+    render_type: str
 
 
 class Block:
@@ -229,23 +342,7 @@ class Block:
         self,
         *,
         name: str,
-        texture: (
-            str
-            | dict[
-                Literal[
-                    "top",
-                    "bottom",
-                    "north",
-                    "south",
-                    "west",
-                    "east",
-                    "particle",
-                    "side",
-                    "render_type",
-                ],
-                str,
-            ]
-        ),
+        texture: texture_type,
         hardness: float,
         resistance: float,
         rotation: Optional[ROTATION] = None,
@@ -400,4 +497,6 @@ class Procedure:
         self.TYPE = "procedure"
 
 
-COMPONENT_TYPE: TypeAlias = Item | CreativeTab | Block | Tag | LootTable | Procedure
+COMPONENT_TYPE: TypeAlias = (
+    Item | CreativeTab | Block | Tag | LootTable | Procedure | Recipe
+)

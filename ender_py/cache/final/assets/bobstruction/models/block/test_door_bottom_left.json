@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/door_bottom_left",
-  "textures": {
-    "bottom": "bobstruction:block/test_door_bottom",
-    "top": "bobstruction:block/test_door_top"
-  },
-  "render_type": "minecraft:cutout_mipped"
-}

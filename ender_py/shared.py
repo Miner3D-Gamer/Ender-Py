@@ -40,15 +40,49 @@ WARNING = 2
 ERROR = 3
 FATAL = 4
 
+from typing import TYPE_CHECKING, TypeAlias
+
+if TYPE_CHECKING:
+    from . import Mod
+    from .components import Texture
+
+
+texture_type: TypeAlias = (
+    """str
+    | dict[
+        Literal[
+            "top",
+            "bottom",
+            "north",
+            "south",
+            "west",
+            "east",
+            "particle",
+            "side",
+            "render_type",
+        ],
+        str,]| Texture"""
+)
+
+
+def add_mod_id_if_missing(id: str, mod: "Mod"):
+
+    if id.__contains__(":"):
+        return id
+    return f"{mod.id}:{id}"
+
 
 def jp(*args) -> str:
     "Join path, not Japan"
     return os.path.join(*args)
 
 
-def get_file_contents(path: str) -> str:
-    # if not os.path.exists(path):
-    #     log(FATAL, f"File {path} does not exist")
+def get_file_contents(path: str, info=None) -> str:
+    if not os.path.exists(path):
+        log(
+            FATAL,
+            f"File {path} does not exist" + (" -> Info: %s" % info if info else ""),
+        )
     with open(path, "r") as f:
         return f.read()
 

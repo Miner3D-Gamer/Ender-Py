@@ -1,9 +1,88 @@
-from .components import Block, Item, CreativeTab, COMPONENT_TYPE
+from .components import Block, Item, CreativeTab, COMPONENT_TYPE, RecipeCrafting
+from .one_off_functions import camel_to_snake
 from typing import Any
 
 
+def brick_set(
+    name: str,
+    textures: str,
+    hardness: float,
+    resistance: float,
+    block: bool = True,
+    stairs: bool = True,
+    slab: bool = True,
+    wall: bool = True,
+) -> dict[str, COMPONENT_TYPE]:
+    components: dict[str, COMPONENT_TYPE] = {}
+    id = camel_to_snake(name.replace(" ", ""))
+    if block:
+        components[id] = Block(
+            name=name,
+            texture=textures,
+            hardness=hardness,
+            resistance=resistance,
+            item=None,
+        )
+    id = id[:-1]
+    if stairs:
+        stair_id = id + "_stairs"
+        components[stair_id] = Block(
+            name=name[:-1] + " Stairs",
+            texture=textures,
+            hardness=hardness,
+            resistance=resistance,
+            item=None,
+            blocktype="stair",
+        )
+        components[stair_id + "_recipe"] = RecipeCrafting(
+            result=stair_id,
+            ingredients=[
+                [stair_id, None, None],
+                [stair_id, stair_id, None],
+                [stair_id, stair_id, stair_id],
+            ],
+            result_count=4,
+        )
+    if slab:
+        slab_id = id + "_slab"
+        components[slab_id] = Block(
+            name=name[:-1] + " Slab",
+            texture=textures,
+            hardness=hardness,
+            resistance=resistance,
+            item=None,
+            blocktype="slab",
+        )
+        components[slab_id + "_recipe"] = RecipeCrafting(
+            result=slab_id,
+            ingredients=[
+                [None, None, None],
+                [slab_id, slab_id, slab_id],
+                [None, None, None],
+            ],
+            result_count=3,
+        )
+    if wall:
+        wall_id = id + "_wall"
+        components[wall_id] = Block(
+            name=name[:-1] + " Wall",
+            texture=textures,
+            hardness=hardness,
+            resistance=resistance,
+            item=None,
+            blocktype="wall",
+        )
+        components[wall_id + "_recipe"] = RecipeCrafting(
+            result=wall_id,
+            ingredients=[
+                [None, None, None],
+                [wall_id, wall_id, wall_id],
+                [wall_id, wall_id, wall_id],
+            ],
+            result_count=6,
+        )
 
-
+    return components
 
 
 def wood_set(
@@ -31,7 +110,7 @@ def wood_set(
         != "solid",
         rotation="log",
     )
-    components["stripped_"+name + "_log"] = Block(
+    components["stripped_" + name + "_log"] = Block(
         name=name.title() + " Log",
         texture={
             "side": textures["log_side_stripped"],

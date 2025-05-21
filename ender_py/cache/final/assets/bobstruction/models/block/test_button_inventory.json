@@ -1,8 +1,0 @@
-{
-    "parent": "block/button_inventory",
-    "textures": {
-      "particle": "bobstruction:block/test_planks",
-      "texture": "bobstruction:block/test_planks"
-    },
-    "render_type": "solid"
-  }

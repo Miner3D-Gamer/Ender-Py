@@ -6,6 +6,11 @@ import json
 import importlib.util
 import sys
 
+from typing import TYPE_CHECKING, TypeAlias
+
+if TYPE_CHECKING:
+    from .shared import texture_type
+
 
 def find_closest_color(
     color: Tuple[int, int, int], targets: List[Tuple[int, int, int]], limit
@@ -108,23 +113,7 @@ def does_texture_have_transparency(texture: str) -> bool:
 
 
 def generate_texture(
-    provided: (
-        str
-        | dict[
-            Literal[
-                "top",
-                "bottom",
-                "north",
-                "south",
-                "west",
-                "east",
-                "particle",
-                "side",
-                "render_type",
-            ],
-            str,
-        ]
-    ),
+    provided: "texture_type",
     name="",
 ) -> dict[str, str]:
     convert_to_correct_format = lambda x: (
@@ -188,7 +177,7 @@ def generate_texture(
             f"Invalid render_type: '{new.get('render_type')}'"
             + (" in context: " + name if name else ""),
         )
-        
+
     new["render_type"] = "minecraft:" + new["render_type"]
 
     return new
@@ -238,3 +227,7 @@ def camel_to_snake(text: str) -> str:
             result.append(text[-1].lower())
 
     return "".join(result)
+
+
+def snake_to_camel(text: str) -> str:
+    return "".join(x.title() for x in text.split("_"))
