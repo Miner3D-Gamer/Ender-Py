@@ -1,8 +1,0 @@
-{
-    "parent": "block/button_pressed",
-    "textures": {
-      "particle": "{particle}",
-      "texture": "{side}"
-    },
-    "render_type": "solid"
-  }

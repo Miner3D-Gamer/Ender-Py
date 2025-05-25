@@ -1,5 +1,5 @@
-# IMPORTS AND CONTEXTS ARE NOT RESPECTED DUE TO THE NEW STRUCTURE
-
+# type: ignore
+# Good luck annotating this future me :D
 import json, os
 from ender_py.shared import (
     log,
@@ -408,7 +408,9 @@ class ProcedureInternal:
             f"Block '{procedure_data['action']}' not found (Not defined within any loaded plugins)",
         )
 
-    def handle_event(self, procedure: list, requested_version: str, event: str):
+    def handle_event(
+        self, procedure: list[dict[str, Any]], requested_version: str, event: str
+    ):
         """
         return: Tuple[Event code, required imports, context code]
         """

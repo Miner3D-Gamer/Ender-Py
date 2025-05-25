@@ -1,11 +1,13 @@
 /procedure_crafter
 /bobstruct
 /ender_py/cache
+stats.txt
 ender_py/defaults/__pycache__/configurator.cpython-311.pyc
 ender_py/fabric/1.18.2/things/__pycache__/configurator.cpython-311.pyc
 ender_py/forge/1.18.2/__pycache__/configurator.cpython-311.pyc
 ender_py/forge/1.20.1/__pycache__/configurator.cpython-311.pyc
 ender_py/__pycache__/components.cpython-311.pyc
+ender_py/__pycache__/fast_copy.cpython-311.pyc
 ender_py/__pycache__/one_off_functions.cpython-311.pyc
 ender_py/__pycache__/presets.cpython-311.pyc
 ender_py/__pycache__/procedures.cpython-311.pyc

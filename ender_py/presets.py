@@ -1,13 +1,24 @@
-from .components import Block, Item, CreativeTab, COMPONENT_TYPE, RecipeCrafting
+from .components import (
+    Block,
+    Item,
+    CreativeTab,
+    COMPONENT_TYPE,
+    RecipeCrafting,
+    Texture,
+    RecipeItemTag,
+    ALLOWED_BLOCK_TYPES,
+)
 from .one_off_functions import camel_to_snake
-from typing import Any
+from .shared import texture_type
+from typing import Any, TypedDict, Optional, TypeVar
 
 
 def brick_set(
     name: str,
-    textures: str,
+    textures: "texture_type",
     hardness: float,
     resistance: float,
+    cut_last_letter: bool = True,
     block: bool = True,
     stairs: bool = True,
     slab: bool = True,
@@ -15,6 +26,7 @@ def brick_set(
 ) -> dict[str, COMPONENT_TYPE]:
     components: dict[str, COMPONENT_TYPE] = {}
     id = camel_to_snake(name.replace(" ", ""))
+    original_id = id
     if block:
         components[id] = Block(
             name=name,
@@ -23,11 +35,14 @@ def brick_set(
             resistance=resistance,
             item=None,
         )
-    id = id[:-1]
+    if cut_last_letter:
+        id = id[:-1]
+        name = name[:-1]
+
     if stairs:
         stair_id = id + "_stairs"
         components[stair_id] = Block(
-            name=name[:-1] + " Stairs",
+            name=name + " Stairs",
             texture=textures,
             hardness=hardness,
             resistance=resistance,
@@ -37,16 +52,17 @@ def brick_set(
         components[stair_id + "_recipe"] = RecipeCrafting(
             result=stair_id,
             ingredients=[
-                [stair_id, None, None],
-                [stair_id, stair_id, None],
-                [stair_id, stair_id, stair_id],
+                [original_id, None, None],
+                [original_id, original_id, None],
+                [original_id, original_id, original_id],
             ],
             result_count=4,
+            category="building",
         )
     if slab:
         slab_id = id + "_slab"
         components[slab_id] = Block(
-            name=name[:-1] + " Slab",
+            name=name + " Slab",
             texture=textures,
             hardness=hardness,
             resistance=resistance,
@@ -57,15 +73,16 @@ def brick_set(
             result=slab_id,
             ingredients=[
                 [None, None, None],
-                [slab_id, slab_id, slab_id],
+                [original_id, original_id, original_id],
                 [None, None, None],
             ],
-            result_count=3,
+            result_count=6,
+            category="building",
         )
     if wall:
         wall_id = id + "_wall"
         components[wall_id] = Block(
-            name=name[:-1] + " Wall",
+            name=name + " Wall",
             texture=textures,
             hardness=hardness,
             resistance=resistance,
@@ -76,214 +93,229 @@ def brick_set(
             result=wall_id,
             ingredients=[
                 [None, None, None],
-                [wall_id, wall_id, wall_id],
-                [wall_id, wall_id, wall_id],
+                [original_id, original_id, original_id],
+                [original_id, original_id, original_id],
             ],
             result_count=6,
+            category="building",
         )
 
     return components
 
 
+T = TypeVar("T")
+
+
+class WoodSetTextures(TypedDict):
+    log_side: str | None
+    log_end: str | None
+    log_side_stripped: str | None
+    log_end_stripped: str | None
+    planks: str | None
+    leaves: str | None
+    door_top: str | None
+    door_bottom: str | None
+    door_item: str | None
+    trapdoor: str | None
+    render_types: dict[str, str]
+
+
 def wood_set(
     name: str,
-    textures: dict[str, Any],
+    textures: WoodSetTextures,
     hardness: float,
     resistance: float,
     flammability: int,
+    names: Optional[dict[str, str]] = None,
 ) -> dict[str, COMPONENT_TYPE]:
     components: dict[str, COMPONENT_TYPE] = {}
-    components[name + "_log"] = Block(
-        name=name.title() + " Log",
-        texture={
-            "side": textures["log_side"],
-            "top": textures["log_end"],
-            "bottom": textures["log_end"],
-            "render_type": textures.get("render_types", {}).get("log", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance,
-        item=None,
-        flammability=flammability,
-        catches_fire_from_lava=flammability != 0,
-        has_transparency=textures.get("render_types", {}).get("log", "solid")
-        != "solid",
-        rotation="log",
-    )
-    components["stripped_" + name + "_log"] = Block(
-        name=name.title() + " Log",
-        texture={
-            "side": textures["log_side_stripped"],
-            "top": textures["log_end_stripped"],
-            "bottom": textures["log_end_stripped"],
-            "render_type": textures.get("render_types", {}).get("log", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance,
-        item=None,
-        flammability=flammability,
-        catches_fire_from_lava=flammability != 0,
-        has_transparency=textures.get("render_types", {}).get("log", "solid")
-        != "solid",
-        rotation="log",
-    )
-    components[name + "_planks"] = Block(
-        name=name.title() + " Planks",
-        texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get("planks", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        has_transparency=textures.get("render_types", {}).get("planks", "solid")
-        != "solid",
-    )
-    components[name + "_leaves"] = Block(
-        name=name.title() + " Leaves",
-        texture={
-            "bottom": textures["leaves"],
-            "render_type": textures.get("render_types", {}).get(
-                "leaves", "cutout_mipped"
-            ),
-        },
-        hardness=0.2,
-        resistance=0.2,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="leaves",
-        has_transparency=textures.get("render_types", {}).get("leaves", "cutout_mipped")
-        != "solid",
-        opacity=0,
-        requires_correct_tool_for_drops=True,
-    )
-    components[name + "_stairs"] = Block(
-        name=name.title() + " Stairs",
-        texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get("stairs", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="stair",
-        has_transparency=textures.get("render_types", {}).get("stairs", "solid")
-        != "solid",
-    )
-    components[name + "_slab"] = Block(
-        name=name.title() + " Slab",
-        texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get("slab", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="slab",
-        has_transparency=textures.get("render_types", {}).get("slab", "solid")
-        != "solid",
-    )
-    components[name + "_fence"] = Block(
-        name=name.title() + " Fence",
-        texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get("fence", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="fence",
-        has_transparency=textures.get("render_types", {}).get("fence", "solid")
-        != "solid",
-        opacity=0,
-    )
-    components[name + "_fence_gate"] = Block(
-        name=name.title() + " Fence Gate",
-        texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get("fence_gate", "solid"),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="fence_gate",
-        has_transparency=textures.get("render_types", {}).get("fence_gate", "solid")
-        != "solid",
-        opacity=0,
-    )
-    components[name + "_door"] = Block(
-        name=name.title() + " Door",
-        texture={
-            "top": textures["door_top"],
-            "bottom": textures["door_bottom"],
-            "render_type": textures.get("render_types", {}).get(
-                "door", "cutout_mipped"
-            ),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="door",
-        display_item="item;" + textures["door_item"],
-        has_transparency=textures.get("render_types", {}).get("door", "cutout_mipped")
-        != "solid",
-        opacity=0,
-    )
-    components[name + "_pressure_plate"] = Block(
-        name=name.title() + " Pressure Plate",
-        texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get(
-                "pressure_plate", "solid"
-            ),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="pressure_plate",
-        has_transparency=textures.get("render_types", {}).get("pressure_plate", "solid")
-        != "solid",
-        opacity=0,
-    )
-    components[name + "_trapdoor"] = Block(
-        name=name.title() + " Trapdoor",
-        texture={
-            "bottom": textures["trapdoor"],
-            "render_type": textures.get("render_types", {}).get(
-                "trapdoor", "cutout_mipped"
-            ),
-        },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="trap_door",
-        has_transparency=textures.get("render_types", {}).get(
-            "trapdoor", "cutout_mipped"
+    default = {
+        "log": "%s Log",
+        "stripped_log": "Stripped %s Log",
+        "wood": "%s Wood",
+        "stripped_wood": "Stripped %s Wood",
+        "planks": "%s Planks",
+        "leaves": "%s Leaves",
+        "stairs": "%s Stairs",
+        "slab": "%s Slab",
+        "fence": "%s Fence",
+        "fence_gate": "%s Fence Gate",
+        "door": "%s Door",
+        "trapdoor": "%s Trapdoor",
+        "pressure_plate": "%s Pressure Plate",
+        "button": "%s Button",
+    }
+    naming = default
+    if isinstance(names, dict):
+        naming.update(names)
+
+    def helper(required_textures: list[str], name: str):
+
+        if all([textures.get(x) for x in required_textures]) and naming.get(name):
+            create_block = True
+        else:
+            create_block = False
+        if create_block:
+            block_name = naming[name] % name
+            block_id = camel_to_snake(block_name)
+        else:
+            block_name = ""
+            block_id = default[name] % name
+
+        return create_block, block_name, block_id
+
+    def texture_get(t: str) -> str:
+        return textures.get(t) or t
+
+    def create_block(
+        texture: dict[str, str],
+        name: str,
+        block_type: ALLOWED_BLOCK_TYPES,
+        default_render_type: str = "solid",
+        rotation=None,
+        display_item: Optional[str] = None,
+    ):
+
+        create_block, block_name, block_id = helper([x for x in texture.values()], name)
+        new = {}
+        for key, item in texture.items():
+            new[key] = texture_get(item)
+        new.update(
+            {
+                "render_type": textures.get("render_types", {}).get(name)
+                or default_render_type
+            }
         )
-        != "solid",
-        opacity=0,
-    )
-    components[name + "_button"] = Block(
-        name=name.title() + " Button",
+
+        if create_block:
+            components[block_id] = Block(
+                name=block_name,
+                texture=new,
+                hardness=hardness,
+                resistance=resistance,
+                item=None,
+                flammability=flammability,
+                catches_fire_from_lava=flammability != 0,
+                has_transparency=new["render_type"] != "solid",
+                rotation=rotation,
+                display_item=display_item,
+                blocktype=block_type,
+            )
+
+    create_block(
         texture={
-            "bottom": textures["planks"],
-            "render_type": textures.get("render_types", {}).get("button", "solid"),
+            "side": "log_side",
+            "bottom": "log_end",
         },
-        hardness=hardness,
-        resistance=resistance * 1.5,
-        item=None,
-        catches_fire_from_lava=flammability != 0,
-        blocktype="button",
-        has_transparency=textures.get("render_types", {}).get("button", "solid")
-        != "solid",
+        name="log",
+        block_type="cube",
+        default_render_type="solid",
+        rotation="log",
+    )
+    create_block(
+        texture={
+            "side": "stripped_log_side",
+            "bottom": "stripped_log_end",
+        },
+        name="stripped_log",
+        block_type="cube",
+        default_render_type="solid",
+        rotation="log",
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="planks",
+        block_type="cube",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="stairs",
+        block_type="stair",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="slab",
+        block_type="slab",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="fence",
+        block_type="fence",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="fence_gate",
+        block_type="fence_gate",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="pressure_plate",
+        block_type="pressure_plate",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "planks",
+        },
+        name="button",
+        block_type="button",
+        default_render_type="solid",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "leaves",
+        },
+        name="leaves",
+        block_type="leaves",
+        default_render_type="cutout_mipped",
+        rotation=None,
+    )
+    create_block(
+        texture={
+            "bottom": "door_bottom",
+            "top": "door_top",
+        },
+        name="door",
+        block_type="door",
+        default_render_type="cutout_mipped",
+        rotation=None,
+        display_item=(
+            "item;" + textures["door_item"] if textures["door_item"] else None
+        ),
+    )
+    create_block(
+        texture={
+            "bottom": "trapdoor",
+        },
+        name="trapdoor",
+        block_type="trap_door",
+        default_render_type="cutout_mipped",
+        rotation=None,
+        display_item=None,
     )
 
     return components

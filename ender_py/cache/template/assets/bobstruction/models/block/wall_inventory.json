@@ -1,8 +1,0 @@
-{
-  "parent": "block/wall_inventory",
-  "textures": {
-    "wall": "{side}",
-    "particle": "{particle}"
-  },
-  "render_type": "solid"
-}

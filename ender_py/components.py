@@ -3,16 +3,14 @@ from typing import (
     TypeAlias,
     Union,
     Literal,
-    NoReturn,
-    Any,
-    Tuple,
-    List,
+    cast,
     Iterable,
-    TypeAlias,
+    Any,
     TypedDict,
 )
 
 from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from . import Mod
@@ -23,9 +21,9 @@ from .shared import (
     get_file_contents,
     log,
     FATAL,
-    ERROR,
-    WARNING,
-    INFO,
+    # ERROR,
+    # WARNING,
+    # INFO,
     add_mod_id_if_missing,
     texture_type,
 )
@@ -40,7 +38,15 @@ unique_characters = get_file_contents(
 
 
 class VoxelShape:
-    def __init__(self, min_x, min_y, min_z, max_x, max_y, max_z) -> None:
+    def __init__(
+        self,
+        min_x: float,
+        min_y: float,
+        min_z: float,
+        max_x: float,
+        max_y: float,
+        max_z: float,
+    ) -> None:
         self.min_x = min_x
         self.min_y = min_y
         self.min_z = min_z
@@ -58,7 +64,8 @@ class VoxelShape:
 
 
 class Recipe:
-    __slots__ = ["result", "result_count", "TYPE", "recipe_type"]
+    __slots__ = ["result", "result_count", "recipe_type"]
+    TYPE = "recipe"
 
     def __init__(
         self,
@@ -69,8 +76,6 @@ class Recipe:
         self.result = result
         self.result_count = result_count
         self.recipe_type = "unset"
-
-        self.TYPE = "recipe"
 
     def generate(self, mod: "Mod") -> str:
         raise NotImplementedError(
@@ -96,17 +101,16 @@ class RecipeCrafting(Recipe):
     def __init__(
         self,
         *,
-        result: "str",
+        result: str,
         ingredients: "list[list[str  | None | RecipeItemTag]]",
         result_count: int,
-        category: Optional[str] = None,
+        category: Optional["RECIPE_BOOK_CATEGORIES_CRAFTING"] = None,
         _condition: Unused = None,
     ) -> None:
         super().__init__(result=result, result_count=result_count)
-        self.recipe_type = "crafting_shaped"
+        self.recipe_type = "minecraft_crafting_shaped"
         self.category = category
         self.ingredients = ingredients
-        self.TYPE = "recipe_crafting"
 
     def generate(self, mod: "Mod"):
         default = {
@@ -121,14 +125,14 @@ class RecipeCrafting(Recipe):
         if self.category:
             default["category"] = self.category
         key_insert = {"item": "minecraft:polished_granite"}
-        unique = set()
+        unique_set: set[str | RecipeItemTag] = set()
         for y in self.ingredients:
             for x in y:
                 if x:
-                    unique.add(x)
-        unique = list(unique)
+                    unique_set.add(x)
+        unique = list(unique_set)
 
-        new = []
+        new: list[str] = []
         for y in self.ingredients:
             temp = ""
             for x in y:
@@ -142,15 +146,182 @@ class RecipeCrafting(Recipe):
         keys = {}
         for x in range(len(unique)):
             keys[unique_characters[x]] = key_insert.copy()
-            if isinstance(unique[x], RecipeItemTag):
-                keys[unique_characters[x]]["tag"] = add_mod_id_if_missing(
-                    unique[x].tag, mod
-                )
+            item = unique[x]
+            if isinstance(item, RecipeItemTag):
+                keys[unique_characters[x]]["tag"] = add_mod_id_if_missing(item.tag, mod)
             else:
-                keys[unique_characters[x]]["item"] = add_mod_id_if_missing(
-                    unique[x], mod
-                )
+                keys[unique_characters[x]]["item"] = add_mod_id_if_missing(item, mod)
         default["key"] = keys
+        return json.dumps(default, indent=4)
+
+
+RECIPE_BOOK_CATEGORIES_CRAFTING: TypeAlias = Literal[
+    "building", "redstone", "misc", "equipment"
+]
+RECIPE_BOOK_CATEGORIES_SMELTING: TypeAlias = Literal["blocks", "food"]
+
+
+class RecipeCraftingShapeless(Recipe):
+    __slots__ = [
+        "ingredients",
+        "TYPE",
+        "condition",
+        "result_count",
+        "result",
+        "category",
+    ]
+
+    def __init__(
+        self,
+        *,
+        result: str,
+        ingredients: list[Union[str, RecipeItemTag]],
+        result_count: int,
+        category: Optional[RECIPE_BOOK_CATEGORIES_CRAFTING] = None,
+        _condition: Unused = None,
+    ) -> None:
+        super().__init__(result=result, result_count=result_count)
+        self.recipe_type = "minecraft_crafting_shapeless"
+        self.category = category
+        self.ingredients = ingredients
+
+    def generate(self, mod: "Mod"):
+        default = {
+            "type": "minecraft:crafting_shapeless",
+            "ingredients": [],
+            "result": {
+                "item": add_mod_id_if_missing(self.result, mod),
+                "count": self.result_count,
+            },
+        }
+
+        if self.category:
+            default["category"] = self.category
+
+        unique = list(set(self.ingredients))
+
+        for x in unique:
+            if isinstance(x, RecipeItemTag):
+                default["ingredients"].append(
+                    {"tag": add_mod_id_if_missing(x.tag, mod)}
+                )
+
+            else:
+                default["ingredients"].append({"item": add_mod_id_if_missing(x, mod)})
+
+        return json.dumps(default, indent=4)
+
+
+class RecipeStoneCutter(Recipe):
+    __slots__ = [
+        "ingredients",
+        "TYPE",
+        "condition",
+        "result_count",
+        "result",
+    ]
+
+    def __init__(
+        self,
+        *,
+        result: str,
+        ingredients: Union[str, RecipeItemTag],
+        result_count: int,
+        _condition: Unused = None,
+    ) -> None:
+        super().__init__(result=result, result_count=result_count)
+        self.recipe_type = "minecraft_stonecutting"
+        self.ingredients = ingredients
+
+    def generate(self, mod: "Mod"):
+        default = {
+            "type": "minecraft:stonecutting",
+            "count": self.result_count,
+            "ingredient": None,
+            "result": add_mod_id_if_missing(self.result, mod),
+        }
+
+        if isinstance(self.ingredients, RecipeItemTag):
+            default["ingredients"] = {
+                "tag": add_mod_id_if_missing(self.ingredients.tag, mod)
+            }
+
+        else:
+            default["ingredients"] = {
+                "item": add_mod_id_if_missing(self.ingredients, mod)
+            }
+
+        return json.dumps(default, indent=4)
+
+
+SMELT_TYPE: TypeAlias = Literal[
+    "minecraft:smelting",
+    "minecraft:blasting",
+    "minecraft:smoking",
+    "minecraft:campfire_cooking",
+]
+
+
+class RecipeMelt(Recipe):
+    __slots__ = [
+        "ingredients",
+        "TYPE",
+        "condition",
+        "result_count",
+        "result",
+        "category",
+        "smelt_type",
+        "experience",
+        "cooking_time",
+    ]
+
+    def __init__(
+        self,
+        *,
+        result: str,
+        ingredients: Union[str, RecipeItemTag],
+        smelt_type: SMELT_TYPE,
+        cooking_time: int,
+        experience: int,
+        category: Optional[RECIPE_BOOK_CATEGORIES_SMELTING] = None,
+        _condition: Unused = None,
+    ) -> None:
+        super().__init__(result=result, result_count=1)
+        self.smelt_type = smelt_type
+        self.cooking_time = cooking_time
+        self.experience = experience
+        if smelt_type.count(":") == 1:
+            self.recipe_type = "%s_%s" % smelt_type.split(":")
+        else:
+            raise Exception("No.")
+
+        self.category = category
+        self.ingredients = ingredients
+
+    def generate(self, mod: "Mod") -> str:
+        default = {
+            "type": self.recipe_type,
+            "category": "misc",
+            "experience": None,
+            "cookingtime": None,
+            "result": add_mod_id_if_missing(self.result, mod),
+        }
+
+        if self.category:
+            default["category"] = self.category
+
+        if isinstance(self.ingredients, RecipeItemTag):
+            default["ingredient"] = {
+                "tag": add_mod_id_if_missing(self.ingredients.tag, mod)
+            }
+        else:
+            default["ingredient"] = {
+                "item": add_mod_id_if_missing(self.ingredients, mod)
+            }
+
+        default["experience"] = {"item": self.experience}
+        default["cookingtime"] = {"item": self.cooking_time}
+
         return json.dumps(default, indent=4)
 
 
@@ -162,7 +333,6 @@ class Item:
         "durability",
         "unrepairable",
         "fire_resistant",
-        "TYPE",
         "is_block_item",
         "remains_after_crafting",
         "rarity",
@@ -179,6 +349,7 @@ class Item:
         "display_item",
         "block_item_textures",
     ]
+    TYPE = "item"
 
     def __init__(
         self,
@@ -213,7 +384,6 @@ class Item:
         self.durability = durability
         self.unrepairable = unrepairable
         self.fire_resistant = fire_resistant
-        self.TYPE = "item"
         self.block_item_textures = block_item_textures
         self.block_item_type = block_item_type
         self.is_block_item = is_block_item
@@ -239,16 +409,16 @@ class CreativeTab:
         "hide_title",
         "no_scrollbar",
         "alignment_right",
-        "TYPE",
         "search_bar",
     ]
+    TYPE = "creative_tab"
 
     def __init__(
         self,
         *,
         name: str,
         icon_item: str,
-        items: list[str] | dict[str, Any] | Iterable[str],
+        items: list[str] | dict[str, Union[Item, "Block"]] | Iterable[str],
         hide_title: bool = False,
         no_scrollbar: bool = False,
         alignment_right: bool = True,
@@ -262,15 +432,16 @@ class CreativeTab:
         self.alignment_right = alignment_right
 
         if isinstance(items, dict):
-            new_items = []
-            for key, value in items.items():
+            typed_items = cast(dict[str, Union[Item, Block, Any]], items)
+
+            new_items: list[str] = []
+            for key, value in typed_items.items():
                 if isinstance(value, (Item, Block)):
                     new_items.append(key)
         else:
-            new_items = items
+            new_items = [x for x in items]
 
-        self.items = [x for x in new_items]
-        self.TYPE = "creative_tab"
+        self.items = new_items
 
 
 ROTATION: TypeAlias = Literal[
@@ -280,6 +451,21 @@ ROTATION: TypeAlias = Literal[
 # strip_wood_procedure = get_file_contents(
 #     os.path.join(os.path.dirname(__file__), "default_procedures", "strip_wood.json")
 # )
+
+ALLOWED_BLOCK_TYPES: TypeAlias = Literal[
+    "cube",
+    "slab",
+    "stair",
+    "fence",
+    "wall",
+    "pressure_plate",
+    "fence_gate",
+    "button",
+    "trap_door",
+    "door",
+    "leaves",
+    "falling",
+]
 
 
 class Texture(TypedDict):
@@ -299,7 +485,6 @@ class Block:
         "name",
         "texture",
         "item",
-        "TYPE",
         "stack_size",
         "blocktype",
         "hardness",
@@ -337,6 +522,7 @@ class Block:
         "pressure_plate_activation",
         "procedures",
     ]
+    TYPE = "block"
 
     def __init__(
         self,
@@ -372,30 +558,17 @@ class Block:
         push_reaction: Optional[
             Literal["destroy", "block", "push_only", "ignore", "normal"]
         ] = None,
-        blocktype: Literal[
-            "cube",
-            "slab",
-            "stair",
-            "fence",
-            "wall",
-            "pressure_plate",
-            "fence_gate",
-            "button",
-            "trap_door",
-            "door",
-            "leaves",
-            "falling",
-        ] = "cube",
+        blocktype: ALLOWED_BLOCK_TYPES = "cube",
         item: Union["Item", None],
         catches_fire_from_lava: bool = False,
-        display_item: str = "block",
+        display_item: Optional[str] = "block",
         loot_table: Optional[str] = None,
         map_color: Optional[str] = None,
         block_material_type: Optional[str] = "oak",
         button_ticks_pressed: int = 20,
         button_pressed_by_arrow: bool = True,
         pressure_plate_activation: Literal["all", "mobs"] = "all",
-        procedures: Optional[list] = None,
+        procedures: Optional[dict[str, "Procedure"]] = None,
     ) -> None:
         """
         Name: Title of the block
@@ -406,7 +579,6 @@ class Block:
         self.name = name
         self.texture = generate_texture(texture, name)
         self.item = item
-        self.TYPE = "block"
         self.blocktype = blocktype
         if item is None:
             self.stack_size = 64
@@ -417,7 +589,7 @@ class Block:
         self.catches_fire_from_lava = catches_fire_from_lava
         self.resistance = resistance
         self.friction = friction
-        self.display_item = display_item
+        self.display_item = display_item or "block"
         self.speed_factor = speed_factor
         self.luminance = luminance
         self.no_collision = no_collision
@@ -450,7 +622,8 @@ class Block:
 
 
 class Tag:
-    __slots__ = ["name", "replace", "content", "context", "TYPE"]
+    __slots__ = ["name", "replace", "content", "context"]
+    TYPE = "tag"
 
     def __init__(self, name: str, replace: bool, content: list[str], context: str):
         self.name = name
@@ -458,32 +631,31 @@ class Tag:
         self.content = content
         self.context = context
 
-        self.TYPE = "tag"
-
 
 class LootTable:
-    __slots__ = ["name", "entries", "context", "TYPE", "mod_id"]
+    __slots__ = ["name", "entries", "context", "mod_id"]
+    TYPE = "loot_table"
 
-    def __init__(self, name: str, content: Union[str, dict], context: str, mod_id: str):
+    def __init__(
+        self, name: str, content: Union[str, dict[Any, Any]], context: str, mod_id: str
+    ):
         self.name = name
         self.entries = content
         self.context = context
         self.mod_id = mod_id
         # context: location
-        self.TYPE = "loot_table"
 
 
 class Procedure:
-    __slots__ = ["event", "content", "TYPE"]
+    __slots__ = ["event", "content"]
+    TYPE = "procedure"
 
-    def __init__(self, event, content: str | list):
-        new: list
+    def __init__(self, event: Optional[str], content: str | list[Any]):
         self.event = event
         if isinstance(content, str):
             if os.path.exists(content) and os.path.isfile(content):
                 new = json.loads(get_file_contents(content))
             else:
-                b = content
                 try:
                     new = json.loads(content)
                 except:
@@ -493,8 +665,7 @@ class Procedure:
                     )
         else:
             new = content
-        self.content: list = new
-        self.TYPE = "procedure"
+        self.content = new
 
 
 COMPONENT_TYPE: TypeAlias = (

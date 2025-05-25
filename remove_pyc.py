@@ -1,3 +1,4 @@
+# type: ignore
 import os
 
 
@@ -10,7 +11,7 @@ def find_files_with_extension(root_dir: str, file_extension: str):
     return file_paths
 
 
-extra = ["/procedure_crafter", "/bobstruct", "/ender_py/cache"]
+extra = ["/procedure_crafter", "/bobstruct", "/ender_py/cache", "stats.txt"]
 
 with open(".gitignore", "w") as f:
     f.write(

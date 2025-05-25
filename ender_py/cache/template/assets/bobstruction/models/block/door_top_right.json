@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/door_top_right",
-  "textures": {
-    "bottom": "{bottom}",
-    "top": "{top}"
-  },
-  "render_type": "{render_type}"
-}

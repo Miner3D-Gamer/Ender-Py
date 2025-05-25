@@ -1,19 +1,19 @@
-from .shared import log, FATAL, ERROR, WARNING, INFO, jp
-from typing import Literal, Tuple, List
+from .shared import log, ERROR, WARNING, jp
+from typing import Tuple, List, Callable, Iterator
 from PIL import Image
 import os
 import json
 import importlib.util
 import sys
 
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .shared import texture_type
 
 
 def find_closest_color(
-    color: Tuple[int, int, int], targets: List[Tuple[int, int, int]], limit
+    color: Tuple[int, int, int], targets: List[Tuple[int, int, int]], limit: float
 ):
     """q
     Finds the closest matching color from a list within a given limit.
@@ -50,7 +50,7 @@ def get_average_color_of_image(png_path: str):
     """Calculates the average color of a PNG image."""
     with Image.open(png_path) as img:
         img = img.convert("RGB")  # Ensure RGB mode
-        pixels = list(img.getdata())  # Get all pixels
+        pixels: list[Tuple[int, int, int]] = list(img.getdata())  # type: ignore[attr-defined]
         avg_r = sum(p[0] for p in pixels) // len(pixels)
         avg_g = sum(p[1] for p in pixels) // len(pixels)
         avg_b = sum(p[2] for p in pixels) // len(pixels)
@@ -65,13 +65,15 @@ def decimal_to_rgb(decimal: int):
     return (r, g, b)
 
 
-def get_closest_map_color(png: str, colors: str):
+def get_closest_map_color(png_path: str, colors: str, fallback: str):
     with open(colors, "r") as f:
         color_data = json.load(f)
 
-    new = [decimal_to_rgb(y) for x, y in color_data.items()]
+    new = [decimal_to_rgb(color) for _name, color in color_data.items()]
+    if not os.path.exists(png_path):
+        png_path = fallback
 
-    tmp = find_closest_color(get_average_color_of_image(png), new, 255)
+    tmp = find_closest_color(get_average_color_of_image(png_path), new, 255)
     if tmp is None:
         return None
     closest = rgb_to_decimal(*tmp)
@@ -81,7 +83,7 @@ def get_closest_map_color(png: str, colors: str):
     return None
 
 
-def find_file(directory, target_file):
+def find_file(directory: str, target_file: str):
     """
     Search for a file in a directory and its subdirectories.
 
@@ -114,12 +116,12 @@ def does_texture_have_transparency(texture: str) -> bool:
 
 def generate_texture(
     provided: "texture_type",
-    name="",
+    name: str = "",
 ) -> dict[str, str]:
-    convert_to_correct_format = lambda x: (
-        x if x.__contains__(":") else "{mod_id}:block/" + x
+    convert_to_correct_format: Callable[[str], str] = lambda x: (
+        x if (x and x.__contains__(":")) else "{mod_id}:block/" + x
     )
-    new = {}
+    new: dict[str, str] = {}
     if isinstance(provided, str):
         new = {
             "top": convert_to_correct_format(provided),
@@ -137,21 +139,22 @@ def generate_texture(
     else:
         sides = ["north", "south", "west", "east"]
         all = ["top", "bottom", "particle", "side"] + sides
-        if provided.get("side"):
+        side = provided.get("side")
+        if side:
             for thing in sides:
                 if thing not in provided:
-                    new[thing] = convert_to_correct_format(provided.get("side"))
+                    new[thing] = convert_to_correct_format(side)
 
         for thing in all:
             if thing not in new:
                 new[thing] = convert_to_correct_format(
-                    provided.get("north", provided.get("bottom"))
+                    provided.get("north", provided["bottom"])
                 )
 
         for key, val in provided.items():
             if key == "render_type":
                 continue
-            new[key] = convert_to_correct_format(val)
+            new[key] = convert_to_correct_format(str(val))
 
         new["render_type"] = provided.get(
             "render_type",
@@ -183,7 +186,7 @@ def generate_texture(
     return new
 
 
-def import_module_from_full_path(full_path):
+def import_module_from_full_path(full_path: str):
     # Extract the module name from the path (the filename without extension)
     module_name = full_path.split("\\")[-1].split(".")[0]
 
@@ -207,10 +210,12 @@ def import_module_from_full_path(full_path):
 def camel_to_snake(text: str) -> str:
     if not text:
         return text
+    text = text.replace(" ", "")
 
     result = [text[0].lower()]
+    triples: Iterator[Tuple[str, str, str]] = zip(text[:-2], text[1:-1], text[2:])
 
-    for prev, curr, next in zip(text[:-2], text[1:-1], text[2:]):
+    for prev, curr, next in triples:
         # Add underscore if:
         # 1. Current char is uppercase and previous char is lowercase
         # 2. Current char is uppercase and next char is lowercase

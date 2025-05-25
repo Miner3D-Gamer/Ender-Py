@@ -26,7 +26,7 @@
                 },
                 "block2": {
                     "action": "get_block_by_id",
-                    "id": "bobstruction:test_log"
+                    "id": "{log}"
                 }
             }
         },
@@ -35,7 +35,7 @@
                 "action": "replace_block_and_keep_blockstate_and_nbt",
                 "block": {
                     "action": "get_block_by_id",
-                    "id": "bobstruction:stripped_test_log"
+                    "id": "{stripped_log}"
                 },
                 "pos": {
                     "action": "get_event_pos"
