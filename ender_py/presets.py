@@ -9,7 +9,7 @@ from .components import (
     ALLOWED_BLOCK_TYPES,
 )
 from .one_off_functions import camel_to_snake
-from .shared import texture_type
+from .internal_shared import texture_type
 from typing import Any, TypedDict, Optional, TypeVar
 
 

@@ -1,2 +1,2 @@
-import {internal_mod_id}.blocks.{item_id_upper}Block;
-import {internal_mod_id}.items.{item_id_upper}Item;
+import {internal_mod_id}.blocks.{component_id_upper}Block;
+import {internal_mod_id}.items.{component_id_upper}Item;

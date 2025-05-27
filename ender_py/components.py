@@ -8,24 +8,28 @@ from typing import (
     Any,
     TypedDict,
 )
+from fast_functions import get_file_contents
 
 from typing import TYPE_CHECKING
+
+from shared import (
+    log,
+    FATAL,
+)
 
 
 if TYPE_CHECKING:
     from . import Mod
 
-from .one_off_functions import generate_texture
-from .shared import (
+
+from .internal_shared import (
     export_class,
-    get_file_contents,
-    log,
-    FATAL,
     # ERROR,
     # WARNING,
     # INFO,
     add_mod_id_if_missing,
     texture_type,
+    generate_texture,
 )
 import os, json
 
@@ -666,6 +670,17 @@ class Procedure:
         else:
             new = content
         self.content = new
+
+
+class TagManager:
+    def __init__(self) -> None:
+        self.tags: dict[str, list[str]] = {}
+
+    def __setitem__(self, key, item):
+
+        safe = self.tags.get(key, [])
+        safe.append(item)
+        self.tags[key] = safe
 
 
 COMPONENT_TYPE: TypeAlias = (

@@ -1,17 +1,26 @@
-import os
+# I really need to break this file up, 2000 lines is too much
+
+# Adding to path so internal modules can be imported
+import os, sys
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
 from typing import Optional, Union, Any, TypedDict, Callable, cast, NoReturn
 
-from .fast_copy import fast_copytree
+from .fast_io import fast_copytree
 
+from concurrent.futures import ThreadPoolExecutor
 
 # import csv # Later.
 import json
+import traceback
 import shutil
 import re
-from pathlib import Path
 import time
 from collections.abc import Mapping
-import sys
+from concurrent.futures import ThreadPoolExecutor
+from collections import OrderedDict
 
 main_path = sys.modules["__main__"].__file__
 if main_path:
@@ -29,32 +38,44 @@ from .components import (
     VoxelShape,
     Procedure,
     Recipe,
+    Unused,
+    Tag,
+    TagManager,
     # RecipeCrafting,
     # RecipeItemTag,
     # RecipeCraftingShapeless,
 )
-from .shared import (
+from .internal_shared import (
+    # DEBUG,
+    jp,
+    replace,
+    export_class,
+    import_class,
+    add_mod_id_if_missing,
+)
+from .one_off_functions import (
+    import_module_from_full_path,
+    get_performance_handler,
+    performance_handler,
+    reset_performance_handler,
+    print_performance,
+    performance_add_end_marker,
+    decimal_to_rgb,
+)
+from shared import (
     log,
     FATAL,
     ERROR,
     WARNING,
     INFO,
-    DEBUG,
-    jp,
-    get_file_contents,
-    replace,
-    export_class,
-    import_class,
 )
-from .one_off_functions import get_closest_map_color, import_module_from_full_path
+
 from .procedures import ProcedureInternal
 
+from fast_functions import *
 
-def add_mod_id_if_missing(id: str, mod: "Mod"):
-
-    if id.__contains__(":"):
-        return id
-    return f"{mod.id}:{id}"
+this = os.path.dirname(__file__)
+common_cache = jp(this, "cache")
 
 
 def is_valid_internal_mod_id(id: str):
@@ -194,80 +215,11 @@ def export_mod(mod_class: "Mod") -> dict[str, str | dict[str, Any]]:
     return {"mod": mod_things, "components": components}
 
 
-# def import_mod(mod_code: dict[str, Any], path: str):
-#     components: dict[str, dict[str, Any]] = mod_code.get("components", {})
-#     mod_credintials: dict[str, str] = mod_code.get("mod", {})
-#     del mod_code
-#     mod = Mod(
-#         internal_id=mod_credintials.get("internal_id", "com.example.mod"),
-#         public_id=mod_credintials.get("public_id", "example_mod"),
-#         name=mod_credintials.get("name", "Example Mod"),
-#         description=mod_credintials.get("description", ""),
-#         author=mod_credintials.get("author", ""),
-#         version=mod_credintials.get("version", "0.0.0"),
-#         license=mod_credintials.get("license", "None"),
-#         mdk_folder=path,
-#     )
-
-#     for component_id, component_content in components.items():
-#         type = component_content.pop("type")
-
-#         match type:
-#             case "item":
-#                 configuration = component_content.pop("configuration", {})
-#                 food_properties: dict[str, Any] = configuration.pop(
-#                     "food_properties", None
-#                 )
-#                 if food_properties is None:
-#                     food_properties = {}
-#                 component = Item(
-#                     name=component_content.pop("name", ""),
-#                     texture=component_content.pop("texture", ""),
-#                     stack_size=configuration.pop("stack_size", 1),
-#                     durability=configuration.pop("durability", None),
-#                     unrepairable=configuration.pop("unrepairable", False),
-#                     fire_resistant=configuration.pop("fire_resistant", False),
-#                     is_block_item=component_content.pop("is_block_item", False),
-#                     remains_after_crafting=configuration.pop(
-#                         "remains_after_crafting", False
-#                     ),
-#                     rarity=configuration.pop("rarity", "common"),
-#                     enchantability=configuration.pop("enchntability", 0),
-#                     block_break_speed=configuration.pop("block_break_speed", 1.0),
-#                     can_break_any_block=configuration.pop("can_break_any_block", False),
-#                     item_animation=configuration.pop("item_animation", 0),
-#                     is_meat=food_properties.pop("is_meat", False),
-#                     nutrition=food_properties.pop("nutrition", 0),
-#                     saturation=food_properties.pop("saturation", 0),
-#                     fast_consumed=food_properties.pop("fast_consumed", False),
-#                     always_edible=food_properties.pop("always_edible", False),
-#                 )
-#             case "creative_menu":
-#                 configuration = component_content.pop("configuration", {})
-#                 component = CreativeTab(
-#                     name=component_content.pop("name", ""),
-#                     icon_item=component_content.pop("icon_item", ""),
-#                     items=configuration.pop("item_ids", []),
-#                     hide_title=configuration.pop("hide_title", False),
-#                     no_scrollbar=configuration.pop("no_scrollbar", False),
-#                     alignment_right=configuration.pop("alignment_right", False),
-#                 )
-
-#             case _:
-#                 log(ERROR, f"Unknown component type: {type}")
-
-#         if not component_content == {}:
-#             log(WARNING, f"Unknown component properties: {component_content}")
-#         mod.add_component(id=component_id, component=component)
-
-#     return mod
-
-
 translations = {
-    "CreativeModeTab": "creative_tab.{internal_mod_id}.{component_id}",
-    "Item": "item.{internal_mod_id}.{component_id}",
-    "Block": "block.{internal_mod_id}.{component_id}",
-}
+    "creative_tab": "creative_tab.{internal_mod_id}.{component_id}",
+    "item": "item.{internal_mod_id}.{component_id}",
+    "block": "block.{internal_mod_id}.{component_id}",
+}  # THIS IS VERY MUCH IN USE
 
 
 def generate_blocks(
@@ -278,31 +230,46 @@ def generate_blocks(
     configurator: dict[str, Callable[..., Any]],
     java_path: str,
     color_path: Optional[str],
-    fallback_path: str,
-) -> tuple[bool, dict[str, Item], list[LootTable], dict[str, str]]:
+    error_texture: str,
+    tag_manager: TagManager,
+    unique_name: str,
+    mod_info: "ModInfo",
+) -> tuple[dict[str, Item], list[LootTable], dict[str, str]]:
     return_items: dict[str, Item] = {}
     return_loot_tables: list[LootTable] = []
-    # Generate block items and loot table for every block
-    for block_id, block in blocks.items():
-        block: Block
-        if block.map_color is None and not color_path is None:
-            stuff = format_text(block.texture["top"], self).split(":", 1)
-            if len(stuff) == 2:
-                texture = jp(stuff[0], "textures", stuff[1])
-            else:
-                raise BaseException(stuff)
-            texture_path = jp(
-                template_path,
-                "assets",
-                # self.id,
-                # "textures",
-                # "block",
-                texture + ".png",
-            )
 
-            block.map_color = get_closest_map_color(
-                texture_path, color_path, fallback_path
-            )
+    if not color_path is None:
+        performance_handler(unique_name, "Blocks", "Finding closest map color", None)
+        with open(color_path, "r") as f:
+            color_data = json.load(f)
+        colors = OrderedDict()
+        for key, value in color_data.items():
+            colors[key] = decimal_to_rgb(value)
+
+        # Generate block items and loot table for every block
+        for block_id, block in blocks.items():
+            if block.map_color is None:
+                stuff = format_text(block.texture["top"], self, mod_info).split(":", 1)
+                if len(stuff) == 2:
+                    texture = jp(stuff[0], "textures", stuff[1])
+                else:
+                    raise BaseException(stuff)
+                texture_path = jp(
+                    template_path,
+                    "assets",
+                    texture + ".png",
+                )
+
+                block.map_color = get_closest_map_color(
+                    texture_path, colors, error_texture
+                )
+    performance_handler(
+        unique_name,
+        "Blocks",
+        "Adding block items, loot table, and 'mineable' tag",
+        None,
+    )
+    for block_id, block in blocks.items():
         return_items.update(
             {
                 block_id: (
@@ -357,11 +324,12 @@ def generate_blocks(
         )
         if not block.breakable_with is None:
             for tool in block.breakable_with:
-                self.tags["minecraft"]["blocks/mineable/" + tool].append(block_id)
+                tag_manager["minecraft:blocks/mineable/" + tool] = block_id
 
     # Call code bundler to generate the code for each block
+    performance_handler(unique_name, "Blocks", "Generating code (Bundler)", None)
 
-    skip, block_bundler, block_files, translation_keys = handle_bundler(
+    block_bundler, block_files, translation_keys = handle_bundler(
         {
             "bundler": jp(replace_files, "blocks/block_bundler.java"),
             "import": jp(replace_files, "blocks/import_line.java"),
@@ -374,17 +342,15 @@ def generate_blocks(
         blocks,  # type: ignore
         configurator,
     )
-
-    if skip:
-        return True, {}, [], {}
+    performance_handler(unique_name, "Blocks", "Writing code to cache", None)
 
     write_to_file(jp(java_path, "ModBlocks.java"), block_bundler)
-    # self.things_added.append("blocks")
+    # things_added.append("blocks")
 
     for file, code in block_files.items():
         write_to_file(jp(java_path, f"blocks/{file}.java"), code)
 
-    return False, return_items, return_loot_tables, translation_keys
+    return return_items, return_loot_tables, translation_keys
 
 
 class Model:
@@ -398,12 +364,6 @@ class Model:
 
 def combine_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[str, str]:
     return {**dict1, **dict2}
-
-
-def write_to_file(path: str, text: str):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        f.write(text)
 
 
 def remove_brackets(string: str):
@@ -766,16 +726,19 @@ def handle_bundler(
     mod: "Mod",
     components: Mapping[str, COMPONENT_TYPE],
     configurator: dict[str, Callable[..., Any]],
-) -> tuple[bool, str, dict[str, str], dict[str, str]]:
+) -> tuple[str, dict[str, str], dict[str, str]]:
+    # I don't like this function :|
+    # It's slow, unreadable, and not very dynamic
+
     if not os.path.exists(paths["bundler"]):
-        log(ERROR, f"File {paths['bundler']} does not exist")
-        return True, "", {}, {}
+        log(FATAL, f"File {paths['bundler']} does not exist")
+        return "", {}, {}
     if not os.path.exists(paths["import"]):
-        log(ERROR, f"File {paths['import']} does not exist")
-        return True, "", {}, {}
+        log(FATAL, f"File {paths['import']} does not exist")
+        return "", {}, {}
     if not os.path.exists(paths["code"]):
-        log(ERROR, f"File {paths['code']} does not exist")
-        return True, "", {}, {}
+        log(FATAL, f"File {paths['code']} does not exist")
+        return "", {}, {}
 
     bundler = get_file_contents(paths["bundler"])
     import_line = get_file_contents(paths["import"])
@@ -793,15 +756,13 @@ def handle_bundler(
     translation_keys: dict[str, str] = {}
     extra: dict[str, str] = {}
     for component_id, component in components.items():
+        naming = component.TYPE
         new_code = code
-        # component code
 
         processing_block_item = False
         if isinstance(component, Item):
-            naming = "Item"
             processing_block_item = component.is_block_item
         elif isinstance(component, CreativeTab):
-            naming = "CreativeModeTab"
             single_item = get_file_contents(paths["item"])
 
             class none:
@@ -834,15 +795,6 @@ def handle_bundler(
                 },
             )
         elif isinstance(component, Block):
-            naming = "Block"
-            # type_initializer = json.loads(get_file_contents(paths["initializer"]))
-            # extra["initializer"] = type_initializer.get(
-            #     component.blocktype, type_initializer["cube"]
-            # ).get("before", "")
-
-            # extra["after"] = type_initializer.get(
-            #     component.blocktype, type_initializer["cube"]
-            # ).get("after", "")
 
             extra["block_type"] = (
                 component.blocktype.replace("_", " ")
@@ -853,8 +805,6 @@ def handle_bundler(
 
         else:
             raise Exception("Invalid type: " + component.TYPE)
-
-        # typed_component_id = camel_to_snake(naming) + "_" + component_id
 
         (
             properties,
@@ -867,7 +817,15 @@ def handle_bundler(
         ) = get_properties(component, paths["properties"])
 
         if component.TYPE == "block":
-            imports += ("\nimport net.minecraft.world.level.block.%sBlock;" % (component.blocktype.replace("_", " ").title()).replace(" ", "")) if not component.blocktype == "cube" else ""  # type: ignore
+            imports += (
+                (
+                    "\nimport net.minecraft.world.level.block.%sBlock;"
+                    % (component.blocktype.replace("_", " ").title()).replace(" ", "")  # type: ignore
+                )
+                if not component.blocktype == "cube"  # type: ignore
+                else ""
+            )
+
         new_code = replace(
             new_code,
             combine_dicts(
@@ -902,7 +860,7 @@ def handle_bundler(
             {
                 "component_id": component_id,
                 "internal_mod_id": mod.internal_id,
-                "item_id_upper": component_id.title(),
+                "component_id_upper": component_id.title(),
             },
         )
 
@@ -925,74 +883,7 @@ def handle_bundler(
         },
     )
 
-    return False, bundler, all_code, translation_keys
-
-
-def copy_and_rename_builtin(
-    source: Union[str, Path], destination: Union[str, Path], mod_id: str
-) -> None:
-    """
-    Copies a directory tree from source to destination, renaming all
-    subfolders named 'builtin' to the specified mod_id.
-
-    Args:
-        source: The source directory path (str or Path object)
-        destination: The destination directory path (str or Path object)
-        mod_id: The new name to replace 'builtin' folders with
-
-    Raises:
-        FileNotFoundError: If the source directory doesn't exist
-        ValueError: If mod_id is empty or contains invalid characters
-        PermissionError: If lacking permissions to read/write directories
-    """
-    # Convert to Path objects for better path handling
-    source_path = Path(source)
-    dest_path = Path(destination)
-
-    # Input validation
-    if not source_path.exists():
-        raise FileNotFoundError(f"Source directory does not exist: {source_path}")
-
-    if not mod_id or not mod_id.strip():
-        raise ValueError("mod_id cannot be empty")
-
-    if any(char in r'\/:*?"<>|' for char in mod_id):
-        raise ValueError(f"mod_id contains invalid characters: {mod_id}")
-
-    # Create destination directory if it doesn't exist
-    dest_path.mkdir(parents=True, exist_ok=True)
-
-    try:
-        for root, _dirs, files in os.walk(source_path):
-            # Convert current path to Path object
-            current_path = Path(root)
-
-            # Calculate relative path from source
-            relative_path = current_path.relative_to(source_path)
-
-            # Build target path, replacing 'builtin' with mod_id if needed
-            target_parts = [
-                mod_id if part == "builtin" else part for part in relative_path.parts
-            ]
-            target_path = dest_path.joinpath(*target_parts)
-
-            # Create target directory
-            target_path.mkdir(parents=True, exist_ok=True)
-
-            # Copy all files in current directory
-            for file in files:
-                source_file = current_path / file
-                target_file = target_path / file
-
-                # Use copy2 to preserve metadata
-                shutil.copy2(source_file, target_file)
-
-    except PermissionError as e:
-        raise PermissionError(f"Permission denied while copying files: {e}") from e
-    except Exception as e:
-        raise RuntimeError(
-            f"An error occurred while copying directory structure: {e}"
-        ) from e
+    return bundler, all_code, translation_keys
 
 
 def assemble_pack(
@@ -1001,6 +892,7 @@ def assemble_pack(
     pack_path: str,
     mod_id: str,
     mod: "Mod",
+    mod_info: "ModInfo",
 ):
     copy_and_rename_builtin(resource_path, template_path, mod_id)
 
@@ -1023,14 +915,9 @@ def assemble_pack(
         file_contents = get_file_contents(jp(template_path, file))
 
         if format:
-            file_contents = format_text(file_contents, mod)
+            file_contents = format_text(file_contents, mod, mod_info)
 
         write_to_file(jp(pack_path, file), file_contents)
-
-
-def merge_packs(internal_pack: str, external_pack: str, mod_id: str):
-    copy_and_rename_builtin(external_pack, internal_pack, mod_id)
-    # shutil.copytree(external_pack, internal_pack, dirs_exist_ok=True)
 
 
 from urllib.parse import urlparse
@@ -1073,13 +960,22 @@ class SortedComponents(TypedDict):
     block_textures: list[dict[str, str]]
     block_models: list[Model]
     language: dict[str, str]
-    internal_items: dict[str, Item]
-    internal_blocks: dict[str, Block]
-    internal_creative_tabs: dict[str, CreativeTab]
+    items: dict[str, Item]
+    blocks: dict[str, Block]
+    creative_tabs: dict[str, CreativeTab]
     internal_loot_tables: list[LootTable]
+    tags: list[Tag]
 
     procedures: dict[str, Procedure]
     recipes: dict[str, Recipe]
+
+
+class ModInfo(TypedDict):
+    internal_id: str
+    id: str
+    minecraft_version: str
+    mod_loader_version: str
+    mod_loader: str
 
 
 class Mod:
@@ -1093,13 +989,9 @@ class Mod:
         "license",
         "available",
         "components",
-        "tags",
         "unordered_components",
         "external_packs",
         "homepage",
-        "minecraft_version",
-        "mod_loader_version",
-        "mod_loader",
         "info_replace",
         "things_added",
     ]
@@ -1133,11 +1025,11 @@ class Mod:
 
         self.components: dict[str, COMPONENT_TYPE] = {}
         self.unordered_components: list[COMPONENT_TYPE] = []
-        self.tags: dict[str, dict[str, list[str]]] = {"minecraft": {}}
-        tools = ["axe", "pickaxe", "shovel", "hoe"]
+        # self.tags: dict[str, dict[str, list[str]]] = {"minecraft": {}}
+        # tools = ["axe", "pickaxe", "shovel", "hoe"]
 
-        for tool in tools:
-            self.tags["minecraft"]["blocks/mineable/" + tool] = []
+        # for tool in tools:
+        #     self.tags["minecraft"]["blocks/mineable/" + tool] = []
 
         self.available: list[str] = []
 
@@ -1166,7 +1058,7 @@ class Mod:
                 if type == "literal":
                     if self.id == id["value"]:
                         message = id["message"]
-                        level: int = getattr(shared, id["level"])
+                        level: int = getattr(internal_shared, id["level"])
                     else:
                         return
                 elif type == "regex":
@@ -1228,27 +1120,28 @@ class Mod:
             block_textures=[],
             block_models=[],
             language={},
-            internal_items={},
-            internal_blocks={},
-            internal_creative_tabs={},
+            items={},
+            blocks={},
+            creative_tabs={},
             internal_loot_tables=[],
             procedures={},
             recipes={},
+            tags=[],
         )
         for component_id, component in self.components.items():
             if isinstance(component, Item):
                 sorted["item_textures"].append(component.texture)
                 sorted["item_models"].append(Model(component_id, None, True))
                 sorted["language"].update(({component_id: component.name}))
-                sorted["internal_items"].update({component_id: component})
+                sorted["items"].update({component_id: component})
             elif isinstance(component, CreativeTab):
-                sorted["internal_creative_tabs"].update({component_id: component})
+                sorted["creative_tabs"].update({component_id: component})
             elif isinstance(component, Block):
                 sorted["block_textures"].append(component.texture)
                 sorted["block_models"].append(Model(component_id, None))
                 sorted["language"].update(({component_id: component.name}))
-                sorted["internal_blocks"].update({component_id: component})
-                # actions["internal_items"]
+                sorted["blocks"].update({component_id: component})
+                # actions["items"]
             elif isinstance(component, Procedure):
                 sorted["procedures"].update({component_id: component})
             elif isinstance(component, Recipe):
@@ -1256,230 +1149,298 @@ class Mod:
             else:
                 raise Exception("Unknown component type '%s" % type(component))
 
+        for component in self.unordered_components:
+            if isinstance(component, Tag):
+                sorted["tags"].append(component)
+            elif isinstance(component, LootTable):
+                sorted["internal_loot_tables"].append(component)
+            else:
+                raise Exception("Unknown unsorted component type '%s" % type(component))
+
         return sorted
 
     @profile
-    def generate(self, language_update_file: Optional[str] = None) -> None:
-        this = os.path.dirname(__file__)
+    def generate(self, _language_update_file: Unused = None) -> None:
 
-        log(DEBUG, "Sorting components")
+        # log(DEBUG, "Sorting components")
 
         actions = self.get_sorted_components()
 
-        log(DEBUG, "Cleaning Cache")
+        # log(DEBUG, "Cleaning Cache")
+        fast_rmtree(common_cache)
 
-        common_cache = jp(this, "cache")
+        # log(DEBUG, "Iterating through available paths")
+        multithreading = True
+        if multithreading:
+            with ThreadPoolExecutor() as executor:
+                executor.map(
+                    self.safe_generate_mod_for_path,
+                    self.available,
+                    [actions] * len(self.available),  # There has got to be a better way
+                )
+        else:
+            for path in self.available:
+                # Adding the try except doubled the generation time - Not gud :(
+                self.safe_generate_mod_for_path(path, actions)
+        print_performance()
 
+    def safe_generate_mod_for_path(self, path: str, actions: SortedComponents):
         try:
-            shutil.rmtree(common_cache)
-        except:
+            return self.generate_mod_for_path(path, actions)
+        except SystemExit:
             pass
+        except BaseException as e:
+            print("An error occured while generating...")
+            print(e)
+        return None
 
-        log(DEBUG, "Iterating through available paths")
-        for path in self.available:
-            start = time.time()
-            self.things_added: list[str] = (
-                []
-            )  # Document what got added so no unncessary bundlers are inserted in the entry point file
+    def generate_mod_for_path(self, path: str, actions: SortedComponents):
+        start = time.perf_counter()
+        things_added: list[str] = (
+            []
+        )  # Document what got added so no unncessary bundlers are inserted in the entry point file
 
-            def get_info_from_path(path: str):
-                info: list[str] = path.replace("\\", "/").split("/")[-1].split("-")
+        def get_info_from_path(path: str):
+            info: list[str] = path.replace("\\", "/").split("/")[-1].split("-")
 
-                match len(info):
-                    case 1:
-                        raise Exception("Invalid mod path: %s" % path)
-                    case 2:
-                        mod_loader, minecraft_version = info
-                        mod_loader_version = ""
-                    case 3:
-                        mod_loader, minecraft_version, mod_loader_version = info
-                    case _:
-                        mod_loader, minecraft_version, mod_loader_version, *_ = info
-                assert isinstance(mod_loader, str)
-                assert isinstance(minecraft_version, str)
-                assert isinstance(mod_loader_version, str)
-                return mod_loader, minecraft_version, mod_loader_version
+            match len(info):
+                case 1:
+                    raise Exception(
+                        "Invalid mod path (Expected file of {mod_loader}-{minecraft_version}-{mod_loader_version}): %s"
+                        % path
+                    )
+                case 2:
+                    mod_loader, minecraft_version = info
+                    mod_loader_version = ""
+                case 3:
+                    mod_loader, minecraft_version, mod_loader_version = info
+                case _:
+                    mod_loader, minecraft_version, mod_loader_version, *_ = info
+            assert isinstance(mod_loader, str)
+            assert isinstance(minecraft_version, str)
+            assert isinstance(mod_loader_version, str)
+            return mod_loader, minecraft_version, mod_loader_version
 
-            self.mod_loader, self.minecraft_version, self.mod_loader_version = (
-                get_info_from_path(path)
-            )
-            triple_trouble = [
-                self.mod_loader,
-                self.minecraft_version,
-                self.mod_loader_version,
-            ]
-            skip_message = f"skipping " + " ".join(triple_trouble)
-            unique_name = "_".join(triple_trouble)
+        mod_loader_, minecraft_version_, mod_loader_version_ = get_info_from_path(path)
 
+        mod_info = ModInfo(
+            internal_id=self.internal_id,
+            id=self.id,
+            minecraft_version=minecraft_version_,
+            mod_loader_version=mod_loader_version_,
+            mod_loader=mod_loader_,
+        )
+
+        triple_trouble = [
+            mod_info["mod_loader"],
+            mod_info["minecraft_version"],
+            mod_info["mod_loader_version"],
+        ]
+        skip_message = f"skipping " + " ".join(triple_trouble)
+        unique_name = "_".join(triple_trouble)
+
+        replace_files = os.path.join(
+            this,
+            mod_info["mod_loader"],
+            mod_info["minecraft_version"],
+            mod_info["mod_loader_version"],
+        )
+        if mod_info["mod_loader_version"]:  # not os.path.exists(replace_files):
             replace_files = os.path.join(
-                this, self.mod_loader, self.minecraft_version, self.mod_loader_version
+                this, mod_info["mod_loader"], mod_info["minecraft_version"]
             )
-            if self.mod_loader_version:  # not os.path.exists(replace_files):
-                replace_files = os.path.join(
-                    this, self.mod_loader, self.minecraft_version
-                )
-                log(
-                    INFO,
-                    "Now generating for %s %s"
-                    % (self.mod_loader.title(), self.minecraft_version),
-                )
-            else:
-                log(
-                    INFO,
-                    "Now generating for %s %s (%s)"
-                    % (
-                        self.mod_loader.title(),
-                        self.minecraft_version,
-                        self.mod_loader_version,
-                    ),
-                )
-
-            default_path = jp(this, "defaults")
-
-            log(DEBUG, "Setting up for given plugin")
-
-            ##### GENERATING DATAPACK/RESOURCEPACK MOD THINGS
-            configurator_path = jp(replace_files, "configurator.py")
-            if not os.path.exists(configurator_path):
-                log(
-                    ERROR,
-                    f"Configurator at {configurator_path} does not exist, skipping {self.mod_loader} {self.minecraft_version} {self.mod_loader_version}",
-                )
-                continue
-
-            def apply_configurator_to_dict(
-                configurator_path: str, configurator: dict[str, Callable[..., Any]]
-            ):
-                for key, value in import_module_from_full_path(
-                    configurator_path
-                ).__dict__.items():
-                    if key.startswith("__"):
-                        continue
-                    configurator[key] = value
-                return configurator
-
-            configurator: dict[str, Callable[..., Any]] = {}
-            configurator = apply_configurator_to_dict(configurator_path, configurator)
-            configurator = apply_configurator_to_dict(
-                jp(default_path, "configurator.py"), configurator
+            log(
+                INFO,
+                "Now generating for %s %s"
+                % (mod_info["mod_loader"].title(), mod_info["minecraft_version"]),
+            )
+        else:
+            log(
+                INFO,
+                "Now generating for %s %s (%s)"
+                % (
+                    mod_info["mod_loader"].title(),
+                    mod_info["minecraft_version"],
+                    mod_info["mod_loader_version"],
+                ),
             )
 
-            final_cache_path = jp(common_cache, unique_name, "final")
-            template_cache_path = jp(common_cache, unique_name, "template")
+        default_path = jp(this, "defaults")
+        performance_handler(unique_name, "Init", "Figuring out version", start)
 
-            ###
+        performance_handler(
+            unique_name, "Plugin setup", "Setting up Configurator", None
+        )
 
-            info_path = jp(replace_files, "info.json")
-            if not os.path.exists(info_path):
-                log(ERROR, f"Info path {info_path} does not exist, {skip_message}")
-                continue
-
-            self.info_replace = json.loads(get_file_contents(info_path))
-
-            ###
-
-            resource_path = jp(replace_files, "things", "resources")
-            if not os.path.exists(resource_path):
-                resource_path = jp(default_path, "resources")
-                # log(ERROR, f"Resource path {resource_path} does not exist, skipping {mod_loader} {minecraft_version} {mod_loader_version}")
-                # continue
-
-            assemble_pack(
-                resource_path, template_cache_path, final_cache_path, self.id, self
-            )
-            del resource_path
-            for pack in self.external_packs:
-                merge_packs(template_cache_path, pack, self.id)
-
-            os.makedirs(final_cache_path, exist_ok=True)
-
-            ###
-
-            main_src_path = os.path.join(path, "src/main")
-            java_path = os.path.join(
-                main_src_path, "java/" + self.internal_id.replace(".", "/")
-            )
-            resource_path = os.path.join(main_src_path, "resources/")
-            assets_path_self = os.path.join(final_cache_path, "assets", self.id)
-            data_path = os.path.join(final_cache_path, "data")
-            # data_path_self = os.path.join(final_cache_path, "data", self.id)
-            try:
-                shutil.rmtree(main_src_path)
-            except:
-                pass
-            try:
-                shutil.rmtree(resource_path)
-            except:
-                pass
-
-            ### Initial Replacements
-
-            # property_file = os.path.join(replace_files, "gradle.properties")
-
-            # if not os.path.exists(property_file):
-            #     log(ERROR, f"Property file at {property_file} does not exist, skipping {mod_loader} {minecraft_version} {mod_loader_version}")
-            #     continue
-
-            # properties = get_file_contents(property_file)
-
-            # properties = replace(
-            #     properties,
-            #     combine_dicts(
-            #         {
-            #             "mod_version": self.version,
-            #             "mod_name": self.name,
-            #             "mod_author": self.author,
-            #             "mod_description": self.description,
-            #             "mod_license": self.license,
-            #             "internal_mod_id": self.internal_id,
-            #             "mod_id": self.id,
-            #             "minecraft_version": minecraft_version,
-            #             "mod_loader_version": mod_loader_version,
-            #         },
-            #         propertie_info,
-            #     ),
-            # )
-
-            # write_to_file(jp(path, "gradle.properties"), properties)
-
-            # pack.mcmeta
-            os.makedirs(jp(resource_path, "META-INF"), exist_ok=True)
-
-            pack = get_file_contents(jp(this, "pack.mcmeta"))
-            versions = json.loads(get_file_contents(jp(this, "versions.json")))
-            pack_version = versions.get(self.minecraft_version, None)
-            if pack_version is None:
-                raise Exception(
-                    "Unknown pack version for %s in versions.json"
-                    % self.minecraft_version
-                )
-
-            pack = replace(
-                pack,
-                {
-                    "version": str(pack_version),
-                },
+        ##### GENERATING DATAPACK/RESOURCEPACK MOD THINGS
+        configurator_path = jp(replace_files, "configurator.py")
+        if not os.path.exists(configurator_path):
+            log(
+                FATAL,
+                f"{unique_name} Configurator at {configurator_path} does not exist, skipping {mod_info['mod_loader']} {mod_info['minecraft_version']} {mod_info['mod_loader_version']}",
             )
 
-            write_to_file(jp(resource_path, "pack.mcmeta"), pack)
+        def apply_configurator_to_dict(
+            configurator_path: str, configurator: dict[str, Callable[..., Any]]
+        ):
+            for key, value in import_module_from_full_path(
+                configurator_path
+            ).__dict__.items():
+                if key.startswith("__"):
+                    continue
+                configurator[key] = value
+            return configurator
 
-            # mods.toml
-            pack = get_file_contents(jp(this, "mods.toml"))
+        configurator: dict[str, Callable[..., Any]] = {}
+        configurator = apply_configurator_to_dict(configurator_path, configurator)
+        configurator = apply_configurator_to_dict(
+            jp(default_path, "configurator.py"), configurator
+        )
 
-            write_to_file(jp(resource_path, "META-INF/mods.toml"), pack)
+        final_cache_path = jp(common_cache, unique_name, "final")
+        template_cache_path = jp(common_cache, unique_name, "template")
 
-            log(DEBUG, "Generating Content - Blocks")
+        ###
 
-            ### Actual Mod stuff
-            if not os.path.exists(java_path):
-                os.makedirs(java_path)
+        info_path = jp(
+            replace_files, "info.json"
+        )  # This says what minecraft versions it supports
+        if not os.path.exists(info_path):
+            log(
+                FATAL,
+                f"{unique_name} Info path {info_path} does not exist, {skip_message}",
+            )
 
-            # BLOCKS
+        self.info_replace = json.loads(get_file_contents(info_path))
+
+        ###
+
+        resource_path = jp(replace_files, "things", "resources")
+        if not os.path.exists(resource_path):
+            resource_path = jp(default_path, "resources")
+            # log(ERROR, f"Resource path {resource_path} does not exist, skipping {mod_loader} {minecraft_version} {mod_loader_version}")
+            # continue
+
+        performance_handler(
+            unique_name,
+            "Header",
+            "Assembling cache data/resource packs (%s)" % len(self.external_packs),
+            None,
+        )
+
+        assemble_pack(
+            resource_path,
+            template_cache_path,
+            final_cache_path,
+            self.id,
+            self,
+            mod_info,
+        )
+
+        performance_handler(
+            unique_name,
+            "Header",
+            "Merging given resources into cache (%s)" % len(self.external_packs),
+            None,
+        )
+        del resource_path
+        for pack in self.external_packs:
+            copy_and_rename_builtin(template_cache_path, pack, self.id)
+
+        os.makedirs(final_cache_path, exist_ok=True)
+
+        performance_handler(
+            unique_name, "Header", "Setting up datapack/resourcepack", None
+        )
+
+        main_src_path = os.path.join(path, "src/main")
+        java_path = os.path.join(
+            main_src_path, "java/" + self.internal_id.replace(".", "/")
+        )
+        resource_path = os.path.join(main_src_path, "resources/")
+        assets_path_self = os.path.join(final_cache_path, "assets", self.id)
+        data_path = os.path.join(final_cache_path, "data")
+        # data_path_self = os.path.join(final_cache_path, "data", self.id)
+
+        ### Initial Replacements
+
+        # property_file = os.path.join(replace_files, "gradle.properties")
+
+        # if not os.path.exists(property_file):
+        #     log(ERROR, f"Property file at {property_file} does not exist, skipping {mod_loader} {minecraft_version} {mod_loader_version}")
+        #     continue
+
+        # properties = get_file_contents(property_file)
+
+        # properties = replace(
+        #     properties,
+        #     combine_dicts(
+        #         {
+        #             "mod_version": self.version,
+        #             "mod_name": self.name,
+        #             "mod_author": self.author,
+        #             "mod_description": self.description,
+        #             "mod_license": self.license,
+        #             "internal_mod_id": self.internal_id,
+        #             "mod_id": self.id,
+        #             "minecraft_version": minecraft_version,
+        #             "mod_loader_version": mod_loader_version,
+        #         },
+        #         propertie_info,
+        #     ),
+        # )
+
+        # write_to_file(jp(path, "gradle.properties"), properties)
+
+        # pack.mcmeta
+        os.makedirs(jp(resource_path, "META-INF"), exist_ok=True)
+
+        pack = get_file_contents(jp(this, "pack.mcmeta"))
+        versions = json.loads(get_file_contents(jp(this, "versions.json")))
+        pack_version = versions.get(mod_info["minecraft_version"], None)
+        if pack_version is None:
+            raise Exception(
+                "Unknown pack version for %s in versions.json"
+                % mod_info["minecraft_version"]
+            )
+
+        pack = replace(
+            pack,
+            {
+                "version": str(pack_version),
+            },
+        )
+
+        write_to_file(jp(resource_path, "pack.mcmeta"), pack)
+
+        # mods.toml
+        pack = get_file_contents(jp(this, "mods.toml"))
+
+        write_to_file(jp(resource_path, "META-INF/mods.toml"), pack)
+
+        ### Actual Mod stuff
+        if not os.path.exists(java_path):
+            os.makedirs(java_path)
+
+        tag_manager = TagManager()
+
+        block_amount = len(actions["blocks"])
+        if block_amount == 0:
+            pass
+            # performance_handler(unique_name, "Blocks", "Skipping blocks", None)
+        else:
+            performance_handler(
+                unique_name,
+                "Blocks",
+                "Generating code (%s)" % block_amount,
+                None,
+            )
             map_color_path = jp(replace_files, "blocks/map_colors.json")
             if not os.path.exists(map_color_path):
                 log(
                     WARNING,
-                    "Block color path not found/not supported (%s)" % map_color_path,
+                    f"{unique_name} Block color path not found/not supported (%s)"
+                    % map_color_path,
                 )
                 map_color_path = None
 
@@ -1492,435 +1453,545 @@ class Mod:
                 "blocks",
                 "error.png",
             )
+            block_items, block_loot_tables, block_translations = generate_blocks(
+                actions["blocks"],
+                self,
+                template_cache_path,
+                replace_files,
+                configurator,
+                java_path,
+                map_color_path,
+                fallback_path,
+                tag_manager,
+                unique_name,
+                mod_info,
+            )
+            actions["items"].update(block_items)
+            actions["internal_loot_tables"].extend(block_loot_tables)
+            actions["language"].update(block_translations)
+            del block_items, block_loot_tables, block_translations
 
-            if actions["internal_blocks"]:
-                skip, block_items, block_loot_tables, block_translations = (
-                    generate_blocks(
-                        actions["internal_blocks"],
-                        self,
-                        template_cache_path,
+        # ITEMS
+
+        item_amount = len(actions["items"])
+        if item_amount == 0:
+            # performance_handler(unique_name, "Items", "Skipping items", None)
+            pass
+        else:
+            performance_handler(
+                unique_name,
+                "Items",
+                "Generating code (Bundler) (%s)" % item_amount,
+                None,
+            )
+            item_bundler, item_files, translation_keys = handle_bundler(
+                {
+                    "bundler": jp(replace_files, "items/item_bundler.java"),
+                    "import": jp(replace_files, "items/import_line.java"),
+                    "code": jp(replace_files, "items/item_code.java"),
+                    "component": jp(replace_files, "items/item_component.java"),
+                    "properties": jp(replace_files, "items/properties.json"),
+                },
+                self,
+                actions["items"],
+                configurator,
+            )
+
+            actions["language"].update(translation_keys)
+            performance_handler(unique_name, "Items", "Writing code to cache", None)
+
+            write_to_file(jp(java_path, "ModItems.java"), item_bundler)
+            things_added.append("items")
+
+            for file, code in item_files.items():
+                write_to_file(jp(java_path, f"items/{file}.java"), code)
+
+            del item_bundler, item_files, translation_keys
+
+        cerative_tab_amount = len(actions["creative_tabs"])
+        if cerative_tab_amount == 0:
+            pass
+            # performance_handler(
+            #     unique_name,
+            #     "Creative Tabs",
+            #     "Skipping creative tabs",
+            #     None,
+            # )
+        else:
+            performance_handler(
+                unique_name,
+                "Items",
+                "Generating code (Bundler) (%s)" % cerative_tab_amount,
+                None,
+            )
+            creative_tab_bundler, creative_tab_files, translation_keys = handle_bundler(
+                {
+                    "bundler": jp(
                         replace_files,
-                        configurator,
-                        java_path,
-                        map_color_path,
-                        fallback_path,
-                    )
-                )
-                actions["internal_items"].update(block_items)
-                actions["internal_loot_tables"].extend(block_loot_tables)
-                actions["language"].update(block_translations)
-                del block_items, block_loot_tables, block_translations
-
-            log(DEBUG, "Generating Content - Items")
-            # ITEMS
-            if actions["internal_items"]:
-                skip, item_bundler, item_files, translation_keys = handle_bundler(
-                    {
-                        "bundler": jp(replace_files, "items/item_bundler.java"),
-                        "import": jp(replace_files, "items/import_line.java"),
-                        "code": jp(replace_files, "items/item_code.java"),
-                        "component": jp(replace_files, "items/item_component.java"),
-                        "properties": jp(replace_files, "items/properties.json"),
-                    },
-                    self,
-                    actions["internal_items"],
-                    configurator,
-                )
-
-                if skip:
-                    continue
-                actions["language"].update(translation_keys)
-
-                write_to_file(jp(java_path, "ModItems.java"), item_bundler)
-                self.things_added.append("items")
-
-                for file, code in item_files.items():
-                    write_to_file(jp(java_path, f"items/{file}.java"), code)
-
-                del item_bundler, item_files, translation_keys
-
-            log(DEBUG, "Generating Content - Creative Tabs")
-            #### Creative Mode Tabs
-            if actions["internal_creative_tabs"]:
-                skip, creative_tab_bundler, creative_tab_files, translation_keys = (
-                    handle_bundler(
-                        {
-                            "bundler": jp(
-                                replace_files,
-                                "creative_tabs/creative_tab_bundler.java",
-                            ),
-                            "import": jp(
-                                replace_files, "creative_tabs/import_line.java"
-                            ),
-                            "code": jp(
-                                replace_files,
-                                "creative_tabs/creative_tab_code.java",
-                            ),
-                            "component": jp(
-                                replace_files,
-                                "creative_tabs/creative_tab_component.java",
-                            ),
-                            "item": jp(
-                                replace_files,
-                                "creative_tabs/creative_tab_item.java",
-                            ),
-                            "properties": jp(
-                                replace_files, "creative_tabs/properties.json"
-                            ),
-                        },
-                        self,
-                        actions["internal_creative_tabs"],
-                        configurator,
-                    )
-                )
-                if skip:
-                    continue
-                actions["language"].update(translation_keys)
-
-                with open(jp(java_path, "ModCreativeModeTabs.java"), "w") as f:
-                    f.write(creative_tab_bundler)
-                self.things_added.append("creative_mode_tabs")
-
-                for file, code in creative_tab_files.items():
-                    write_to_file(jp(java_path, f"creative_tabs/{file}.java"), code)
-
-                del creative_tab_bundler, creative_tab_files, translation_keys
-
-            log(DEBUG, "Generating Content - Procedures")
-            ### Procedures
-
-            if actions["procedures"] != {}:
-                event_wrapper_location = jp(
-                    replace_files, "procedures/event_handler.java"
-                )
-                if not os.path.exists(event_wrapper_location):
-                    log(
-                        ERROR,
-                        "Unable to find event wrapper at '%s', %s"
-                        % (event_wrapper_location, skip_message),
-                    )
-                    continue
-                total_code = ""
-                total_contexts: dict[str, str] = {}
-                total_imports: list[str] = []
-                for id, procedure in actions["procedures"].items():
-                    procedure: Procedure
-                    if procedure.event:
-                        new = ProcedureInternal()
-                        new.load_blocks(jp(os.path.dirname(__file__), "procedures"))
-                        code, contexts, imports = new.handle_event(
-                            procedure.content,
-                            "%s-%s"
-                            % (self.mod_loader, self.minecraft_version),  # Improve this
-                            procedure.event,
-                        )
-                        total_code += "\n" + code
-                        total_imports.extend(imports)
-                        total_contexts.update(contexts)
-                    else:
-                        log(
-                            WARNING,
-                            "Procedure %s has no event, %s" % (id, skip_message),
-                        )
-
-                total_imports = list(set(total_imports))
-                event_wrapper = get_file_contents(event_wrapper_location)
-                event_wrapper = format_text(
-                    event_wrapper,
-                    self,
-                    {
-                        "imports": "\n".join(["import %s;" % x for x in total_imports]),
-                        "events": total_code,
-                        "contexts": "\n".join(total_contexts.values()),
-                    },
-                )
-
-                write_to_file(jp(java_path, "EventHandler.java"), event_wrapper)
-
-                self.things_added.append("procedures")
-
-            log(DEBUG, "Generating Content - Translation")
-            ### Translations
-
-            translation_path = jp(assets_path_self, "lang/en_us.json")
-            os.makedirs(os.path.dirname(translation_path), exist_ok=True)
-            with open(translation_path, "w") as f:
-                json.dump(actions["language"], f, indent=4)
-
-            log(DEBUG, "Generating Content - Block Models")
-
-            ### Textures + Models
-            class RquiredTexture(TypedDict):
-                item: list[str]
-                block: list[str]
-
-            required_textures = RquiredTexture(
-                item=[],
-                block=[],
-            )
-
-            # Block models/blockstates
-            block_model_path = jp(assets_path_self, "models/block")
-            if not os.path.exists(block_model_path):
-                os.makedirs(block_model_path)
-            blockstate_model_path = jp(
-                final_cache_path, "assets", self.id, "blockstates"
-            )
-            if not os.path.exists(blockstate_model_path):
-                os.makedirs(blockstate_model_path)
-
-            block_state_path_template = jp(
-                template_cache_path, "assets", self.id, "blockstates"
-            )
-
-            block_states = {
-                "none": jp(block_state_path_template, "cube.json"),
-                "falling": jp(block_state_path_template, "cube.json"),
-                "slab": jp(block_state_path_template, "slab.json"),
-                "stair": jp(block_state_path_template, "stairs.json"),
-                "fence": jp(block_state_path_template, "fence.json"),
-                "fence_gate": jp(block_state_path_template, "fence_gate.json"),
-                "door": jp(block_state_path_template, "door.json"),
-                "trap_door": jp(block_state_path_template, "trap_door.json"),
-                "button": jp(block_state_path_template, "button.json"),
-                "leaves": jp(block_state_path_template, "cube.json"),
-                "pressure_plate": jp(block_state_path_template, "pressure_plate.json"),
-                "log": jp(block_state_path_template, "log.json"),
-                "wall": jp(block_state_path_template, "wall.json"),
-            }
-
-            for block_id, block in actions["internal_blocks"].items():
-                block_id: str
-                block: Block
-
-                blockstate_path_for_this_block = jp(
-                    template_cache_path,
-                    "assets",
-                    self.id,
-                    "blockstates",
-                    (
-                        block_states[block.rotation]
-                        if block.blocktype == "cube"
-                        else block_states[block.blocktype]
+                        "creative_tabs/creative_tab_bundler.java",
                     ),
+                    "import": jp(replace_files, "creative_tabs/import_line.java"),
+                    "code": jp(
+                        replace_files,
+                        "creative_tabs/creative_tab_code.java",
+                    ),
+                    "component": jp(
+                        replace_files,
+                        "creative_tabs/creative_tab_component.java",
+                    ),
+                    "item": jp(
+                        replace_files,
+                        "creative_tabs/creative_tab_item.java",
+                    ),
+                    "properties": jp(replace_files, "creative_tabs/properties.json"),
+                },
+                self,
+                actions["creative_tabs"],
+                configurator,
+            )
+
+            actions["language"].update(translation_keys)
+            performance_handler(
+                unique_name, "Creative Tabs", "Writing code to cache", None
+            )
+
+            with open(jp(java_path, "ModCreativeModeTabs.java"), "w") as f:
+                f.write(creative_tab_bundler)
+            things_added.append("creative_mode_tabs")
+
+            for file, code in creative_tab_files.items():
+                write_to_file(jp(java_path, f"creative_tabs/{file}.java"), code)
+
+            del creative_tab_bundler, creative_tab_files, translation_keys
+
+        procedure_amount = len(actions["procedures"])
+        if procedure_amount == 0:
+            pass
+            # performance_handler(
+            #     unique_name,
+            #     "Procedures",
+            #     "Skipping procedures",
+            #     None,
+            # )
+        else:
+            performance_handler(
+                unique_name, "Procedures", "Generating (%s)" % procedure_amount, None
+            )
+            event_wrapper_location = jp(replace_files, "procedures/event_handler.java")
+            if not os.path.exists(event_wrapper_location):
+                log(
+                    FATAL,
+                    f"{unique_name} Unable to find event wrapper at '%s', %s"
+                    % (event_wrapper_location, skip_message),
                 )
+            total_code = ""
+            total_contexts: dict[str, str] = {}
+            total_imports: list[str] = []
+            for id, procedure in actions["procedures"].items():
+                procedure: Procedure
+                if procedure.event:
+                    new = ProcedureInternal()
+                    new.load_blocks(jp(os.path.dirname(__file__), "procedures"))
+                    code, contexts, imports = new.handle_event(
+                        procedure.content,
+                        "%s-%s"
+                        % (
+                            mod_info["mod_loader"],
+                            mod_info["minecraft_version"],
+                        ),  # Improve this
+                        procedure.event,
+                    )
+                    total_code += "\n" + code
+                    total_imports.extend(imports)
+                    total_contexts.update(contexts)
+                else:
+                    log(
+                        WARNING,
+                        f"{unique_name} Procedure %s has no event, %s"
+                        % (id, skip_message),
+                    )
 
-                blockstate_data = replace(
-                    get_file_contents(blockstate_path_for_this_block),
-                    {"mod_id": self.id, "block_id": block_id},
+            total_imports = list(set(total_imports))
+            event_wrapper = get_file_contents(event_wrapper_location)
+            event_wrapper = format_text(
+                event_wrapper,
+                self,
+                mod_info,
+                {
+                    "imports": "\n".join(["import %s;" % x for x in total_imports]),
+                    "events": total_code,
+                    "contexts": "\n".join(total_contexts.values()),
+                },
+            )
+            performance_handler(unique_name, "Procedures", "Writing to file", None)
+
+            write_to_file(jp(java_path, "EventHandler.java"), event_wrapper)
+
+            things_added.append("procedures")
+
+        performance_handler(unique_name, "Translation", "Writing to file", None)
+        ### Translations
+
+        translation_path = jp(assets_path_self, "lang/en_us.json")
+        os.makedirs(os.path.dirname(translation_path), exist_ok=True)
+        with open(translation_path, "w") as f:
+            json.dump(actions["language"], f, indent=4)
+
+        performance_handler(unique_name, "Models", "Setting up", None)
+
+        ### Textures + Models
+        class RquiredTexture(TypedDict):
+            item: set[str]
+            block: set[str]
+
+        required_textures = RquiredTexture(
+            item=set(),
+            block=set(),
+        )
+
+        # Block models/blockstates
+        block_model_path = jp(assets_path_self, "models/block")
+        if not os.path.exists(block_model_path):
+            os.makedirs(block_model_path)
+        blockstate_model_path = jp(final_cache_path, "assets", self.id, "blockstates")
+        if not os.path.exists(blockstate_model_path):
+            os.makedirs(blockstate_model_path)
+
+        block_state_path_template = jp(
+            template_cache_path, "assets", self.id, "blockstates"
+        )
+
+        block_states = {
+            "none": jp(block_state_path_template, "cube.json"),
+            "falling": jp(block_state_path_template, "cube.json"),
+            "slab": jp(block_state_path_template, "slab.json"),
+            "stair": jp(block_state_path_template, "stairs.json"),
+            "fence": jp(block_state_path_template, "fence.json"),
+            "fence_gate": jp(block_state_path_template, "fence_gate.json"),
+            "door": jp(block_state_path_template, "door.json"),
+            "trap_door": jp(block_state_path_template, "trap_door.json"),
+            "button": jp(block_state_path_template, "button.json"),
+            "leaves": jp(block_state_path_template, "cube.json"),
+            "pressure_plate": jp(block_state_path_template, "pressure_plate.json"),
+            "log": jp(block_state_path_template, "log.json"),
+            "wall": jp(block_state_path_template, "wall.json"),
+        }
+        performance_handler(
+            unique_name,
+            "Models",
+            "Generating Block Models and blockstates (%s)" % len(actions["blocks"]),
+            None,
+        )
+        block_state_jobs_paths = []
+        block_state_jobs_contents = []
+        block_state_jobs_length = 0
+
+        block_model_jobs_paths = []
+        block_model_jobs_contents = []
+        block_model_jobs_length = 0
+
+        for block_id, block in actions["blocks"].items():
+            block_id: str
+            block: Block
+
+            # Block state
+
+            blockstate_path_for_this_block = jp(
+                template_cache_path,
+                "assets",
+                self.id,
+                "blockstates",
+                (
+                    block_states[block.rotation]
+                    if block.blocktype == "cube"
+                    else block_states[block.blocktype]
+                ),
+            )
+            blockstate_data = replace(
+                get_file_contents(blockstate_path_for_this_block),
+                {"mod_id": self.id, "block_id": block_id},
+            )
+
+            blockstate_path = jp(blockstate_model_path, f"{block_id}.json")
+
+            block_state_jobs_paths.append(blockstate_path)
+            block_state_jobs_contents.append(blockstate_data)
+            block_state_jobs_length += 1
+
+            # BLOCK STATE DONE
+
+            all_models = get_all_models_in_blockstate(
+                get_file_contents(blockstate_path_for_this_block)
+            )
+            # Models
+
+            for model in set(all_models):
+                model_path = (
+                    jp(
+                        template_cache_path,
+                        "assets",
+                        model.replace(
+                            "{mod_id}:block/{block_id}",
+                            f"{self.id}/models/block/{block.blocktype}",
+                        ),
+                    )
+                    + ".json"
                 )
-
-                blockstate_path = jp(blockstate_model_path, f"{block_id}.json")
-
-                with open(blockstate_path, "w") as f:
-                    f.write(blockstate_data)
-                all_models = get_all_models_in_blockstate(
-                    get_file_contents(blockstate_path_for_this_block)
-                )
-
-                for model in set(all_models):
+                if not os.path.exists(model_path):
+                    old = model_path
                     model_path = (
                         jp(
                             template_cache_path,
                             "assets",
                             model.replace(
                                 "{mod_id}:block/{block_id}",
-                                f"{self.id}/models/block/{block.blocktype}",
+                                f"{self.id}/models/block/cube",
                             ),
                         )
                         + ".json"
                     )
                     if not os.path.exists(model_path):
-                        old = model_path
-                        model_path = (
-                            jp(
-                                template_cache_path,
-                                "assets",
-                                model.replace(
-                                    "{mod_id}:block/{block_id}",
-                                    f"{self.id}/models/block/cube",
-                                ),
-                            )
-                            + ".json"
+                        log(
+                            FATAL,
+                            f"{unique_name} Unable to find suitable model for block {self.id}, tried following paths: \n>{old}\n>{model_path}",
                         )
-                        if not os.path.exists(model_path):
-                            log(
-                                FATAL,
-                                f"Unable to find suitable model for block {self.id}, tried following paths: \n>{old}\n>{model_path}",
-                            )
 
-                    model_data = get_file_contents(model_path)
-                    model_data = replace(model_data, block.texture)
-                    model_data = replace(
-                        model_data,
-                        {"mod_id": self.id},
-                    )
-                    for key, val in block.texture.items():
-                        if key == "render_type":
-                            continue
-                        required_textures["block"].append(val.split("/")[-1])
+                model_data = get_file_contents(model_path)
+                model_data = replace(model_data, block.texture)
+                model_data = replace(
+                    model_data,
+                    {"mod_id": self.id},
+                )
+                for key, val in block.texture.items():
+                    if key == "render_type":
+                        continue
+                    required_textures["block"].add(val.split("/")[-1])
 
-                    model_name_path_extension = model.replace(
-                        "{mod_id}:block/{block_id}",
-                        "",
-                    )
-                    model_path = jp(
-                        block_model_path, f"{block_id}{model_name_path_extension}.json"
-                    )
-                    with open(model_path, "w") as f:
-                        f.write(model_data)
+                model_name_path_extension = model.replace(
+                    "{mod_id}:block/{block_id}",
+                    "",
+                )
+                model_path = jp(
+                    block_model_path, f"{block_id}{model_name_path_extension}.json"
+                )
+                block_model_jobs_paths.append(model_path)
+                block_model_jobs_contents.append(model_data)
+                block_model_jobs_length += 1
+        performance_handler(
+            unique_name,
+            "Models",
+            "Writing block models to cache (%s)" % block_model_jobs_length,
+            None,
+        )
+        write_to_files(
+            block_model_jobs_paths, block_model_jobs_contents, block_model_jobs_length
+        )
 
-            log(DEBUG, "Generating Content - item Models")
-            # Item models
+        # for block_model_path, block_model_data in block_model_jobs:
+        #     with open(block_model_path, "w") as f:
+        #         f.write(block_model_data)
 
-            item_model_path = jp(assets_path_self, "models/item")
+        performance_handler(
+            unique_name,
+            "Models",
+            "Generating (Block) Item Models (%s)" % len(actions["items"]),
+            None,
+        )
+        # Item models
 
-            for item_id, item in actions["internal_items"].items():
-                item_id: str
-                item: Item
-                temp = item.display_item.split(";", 1)
-                if len(temp) == 1:
-                    display_item_mod_id, display_item_texture = (
-                        self.id,
-                        item.texture,
-                    )
-                    display_type = temp[0]
+        item_model_path = jp(assets_path_self, "models/item")
+        item_model_jobs = []
+
+        for item_id, item in actions["items"].items():
+            item_id: str
+            item: Item
+            temp = item.display_item.split(";", 1)
+            if len(temp) == 1:
+                display_item_mod_id, display_item_texture = (
+                    self.id,
+                    item.texture,
+                )
+                display_type = temp[0]
+            else:
+                display_type, rest = temp
+                if ":" in rest:
+                    display_item_mod_id, display_item_texture = rest.split(":", 1)
                 else:
-                    display_type, rest = temp
-                    if ":" in rest:
-                        display_item_mod_id, display_item_texture = rest.split(":", 1)
-                    else:
-                        display_item_mod_id = self.id
-                        display_item_texture = rest
+                    display_item_mod_id = self.id
+                    display_item_texture = rest
 
-                match display_type:
-                    case "block":
+            match display_type:
+                case "block":
+                    item_model = jp(
+                        template_cache_path,
+                        "assets",
+                        f"{self.id}/models/block/{item.block_item_type}_item.json",
+                    )
+                    if not os.path.exists(item_model):
                         item_model = jp(
                             template_cache_path,
                             "assets",
-                            f"{self.id}/models/block/{item.block_item_type}_item.json",
+                            f"{self.id}/models/block/cube_item.json",
                         )
-                        if not os.path.exists(item_model):
-                            item_model = jp(
-                                template_cache_path,
-                                "assets",
-                                f"{self.id}/models/block/cube_item.json",
-                            )
-                        parent = json.loads(get_file_contents(item_model)).get("parent")
+                    parent = json.loads(get_file_contents(item_model)).get("parent")
 
-                        if parent:
-                            ### ARE YOU SURE THIS WILL WORK?
-                            # I HAVE NO IDEA
+                    if parent:
+                        ### ARE YOU SURE THIS WILL WORK?
+                        # I HAVE NO IDEA
 
-                            # HAHA NOPE IT DOES NOT
-                            block_model_output_path = replace(
+                        # HAHA NOPE IT DOES NOT
+                        block_model_output_path = replace(
+                            parent,
+                            {
+                                "mod_id": display_item_mod_id,
+                                "block_id": display_item_texture,
+                            },
+                        ).replace(":", "/models/")
+                        block_model_output_path = (
+                            jp(final_cache_path, "assets", block_model_output_path)
+                            + ".json"
+                        )
+                        if not os.path.exists(block_model_output_path):
+                            if item.block_item_type is None:
+                                log(
+                                    FATAL,
+                                    f"{unique_name} Block item type is None for block item",
+                                )
+
+                            block_model_input_path = replace(
                                 parent,
                                 {
-                                    "mod_id": display_item_mod_id,
-                                    "block_id": display_item_texture,
+                                    "mod_id": self.id,
+                                    "block_id": item.block_item_type,
                                 },
                             ).replace(":", "/models/")
-                            block_model_output_path = (
-                                jp(final_cache_path, "assets", block_model_output_path)
+
+                            model_path = (
+                                jp(
+                                    template_cache_path,
+                                    "assets",
+                                    block_model_input_path,
+                                )
                                 + ".json"
                             )
-                            if not os.path.exists(block_model_output_path):
-                                if item.block_item_type is None:
-                                    log(FATAL, "Block item type is None for block item")
-
-                                block_model_input_path = replace(
-                                    parent,
-                                    {
-                                        "mod_id": self.id,
-                                        "block_id": item.block_item_type,
-                                    },
-                                ).replace(":", "/models/")
-
+                            if not os.path.exists(model_path):
                                 model_path = (
                                     jp(
                                         template_cache_path,
                                         "assets",
-                                        block_model_input_path,
+                                        os.path.dirname(block_model_input_path),
+                                        "cube",
                                     )
                                     + ".json"
                                 )
                                 if not os.path.exists(model_path):
-                                    model_path = (
-                                        jp(
-                                            template_cache_path,
-                                            "assets",
-                                            os.path.dirname(block_model_input_path),
-                                            "cube",
-                                        )
-                                        + ".json"
+                                    log(
+                                        FATAL,
+                                        f"{unique_name} Cannot get item model path :(",
                                     )
-                                    if not os.path.exists(model_path):
-                                        log(FATAL, "Cannot get item model path :(")
-                                    else:
-                                        log(
-                                            WARNING,
-                                            "Unable to find item model for %s, using default cube instead"
-                                            % item_id,
-                                        )
+                                else:
+                                    log(
+                                        WARNING,
+                                        f"{unique_name} Unable to find item model for %s, using default cube instead"
+                                        % item_id,
+                                    )
 
-                                item_model_data = replace(
-                                    get_file_contents(
-                                        model_path,
-                                        info="Getting item model",
-                                    ),
-                                    combine_dicts(item.block_item_textures, {"mod_id": display_item_mod_id}),  # type: ignore
-                                )
-                                write_to_file(block_model_output_path, item_model_data)
-
-                        if not os.path.exists(item_model):
-                            item_model = jp(
-                                template_cache_path,
-                                "assets",
-                                f"{self.id}/models/block/cube_item.json",
+                            item_model_data = replace(
+                                get_file_contents(
+                                    model_path,
+                                    info="Getting item model",
+                                ),
+                                combine_dicts(item.block_item_textures, {"mod_id": display_item_mod_id}),  # type: ignore
                             )
-                    case "item":
+                            item_model_jobs.append(
+                                (block_model_output_path, item_model_data)
+                            )
+
+                    if not os.path.exists(item_model):
                         item_model = jp(
                             template_cache_path,
                             "assets",
-                            f"{self.id}/models/item/items.json",
+                            f"{self.id}/models/block/cube_item.json",
                         )
-                        required_textures["item"].append(item.texture)
-                    case _:
-                        log(FATAL, f"Unknown display type {display_type}")
-
-                model_data = replace(
-                    get_file_contents(item_model),
-                    (
-                        {
-                            "texture": item.texture,
-                            "mod_id": display_item_mod_id,
-                            "block_id": display_item_texture,
-                        }
-                    ),
-                )
-
-                model_path = jp(item_model_path, f"{item_id}.json")
-                write_to_file(model_path, model_data)
-                del model_data, model_path, item
-
-            log(DEBUG, "Managing Content - Textures")
-
-            for dir, textures in required_textures.items():
-                textures = cast(list[str], textures)
-                for texture in textures:
-                    texture_path = jp(
-                        template_cache_path, "assets", self.id, "textures", dir, texture
+                case "item":
+                    item_model = jp(
+                        template_cache_path,
+                        "assets",
+                        f"{self.id}/models/item/items.json",
                     )
-                    if not os.path.exists(jp(assets_path_self, "textures", dir)):
-                        os.makedirs(jp(assets_path_self, "textures", dir))
+                    required_textures["item"].add(item.texture)
+                case _:
+                    log(FATAL, f"{unique_name} Unknown display type {display_type}")
 
-                    if os.path.exists(jp(texture_path) + ".png"):
-                        shutil.copyfile(
-                            jp(texture_path) + ".png",
-                            jp(assets_path_self, "textures", dir, texture + ".png"),
-                        )
-                        if os.path.exists(jp(texture_path) + ".png.mcmeta"):
-                            shutil.copyfile(
+            model_data = replace(
+                get_file_contents(item_model),
+                (
+                    {
+                        "texture": item.texture,
+                        "mod_id": display_item_mod_id,
+                        "block_id": display_item_texture,
+                    }
+                ),
+            )
+
+            model_path = jp(item_model_path, f"{item_id}.json")
+            item_model_jobs.append((model_path, model_data))
+            del model_data, model_path, item
+
+        performance_handler(
+            unique_name,
+            "Models",
+            "Writing (block) item models (%s)" % len(item_model_jobs),
+            None,
+        )
+        for path, model in item_model_jobs:
+            write_to_file(block_model_output_path, item_model_data)
+
+        performance_handler(
+            unique_name,
+            "Blockstates",
+            "Writing blockstates generated in models section to cache (%s)"
+            % block_state_jobs_length,
+            None,
+        )
+
+        write_to_files(
+            block_state_jobs_paths, block_state_jobs_contents, block_state_jobs_length
+        )
+
+        performance_handler(
+            unique_name,
+            "Textures",
+            "Gathering required textures (%s)"
+            % sum(
+                [
+                    len(cast(list[str], textures))
+                    for textures in required_textures.values()
+                ]
+            ),
+            None,
+        )
+        # write_to_file("./required_textures.json", json.dumps(required_textures))
+        texture_jobs = []
+
+        for dir, textures in required_textures.items():
+            textures = cast(list[str], textures)
+            for texture in textures:
+                texture_path = jp(
+                    template_cache_path, "assets", self.id, "textures", dir, texture
+                )
+                if not os.path.exists(jp(assets_path_self, "textures", dir)):
+                    os.makedirs(jp(assets_path_self, "textures", dir))
+
+                target_png = jp(texture_path) + ".png"
+                if os.path.exists(target_png):
+                    png_final_path = jp(
+                        assets_path_self, "textures", dir, texture + ".png"
+                    )
+                    texture_jobs.append((target_png, png_final_path))
+                    if os.path.exists(jp(texture_path) + ".png.mcmeta"):
+                        texture_jobs.append(
+                            (
                                 jp(texture_path) + ".png.mcmeta",
                                 jp(
                                     assets_path_self,
@@ -1929,174 +2000,209 @@ class Mod:
                                     texture + ".png.mcmeta",
                                 ),
                             )
-                    else:
-                        if texture.__contains__(":"):
-                            log(
-                                INFO,
-                                f"Texture {texture} not found. It will be assumed it exists elsewhere undefined.",
-                            )
-                        else:
-                            log(
-                                WARNING,
-                                f"Texture {texture} not found. ({jp(texture_path) + '.png'})",
-                            )
-
-            # loot_table_path = jp(data_path_self, "loot_tables")
-
-            log(DEBUG, "Generating Content? - Loot Tables")
-
-            for loot_table in actions["internal_loot_tables"]:
-                loot_table: LootTable
-                new_loot_table_path = jp(
-                    data_path,
-                    loot_table.mod_id,
-                    "loot_tables",
-                    loot_table.context,
-                    f"{loot_table.name}.json",
-                )
-                if isinstance(loot_table.entries, dict):
-                    entries = json.dumps(loot_table.entries)
+                        )
                 else:
-                    entries = loot_table.entries
-                write_to_file(new_loot_table_path, entries)
-
-            log(DEBUG, "Generating Content? - Tags")
-
-            for id, actual_tag in self.tags.items():
-                for tag, value in actual_tag.items():
-                    tag_path = jp(data_path, id, "tags", tag + ".json")
-                    thing: dict[str, list[str] | bool] = {
-                        "values": [
-                            f"{self.id}:{x}" if not x.__contains__(":") else x
-                            for x in value
-                        ],
-                        "replace": False,
-                    }
-
-                    write_to_file(tag_path, json.dumps(thing))
-
-            log(DEBUG, "Generating Content - Recipes")
-
-            for key, i in actions["recipes"].items():
-                i: Recipe
-                new_recipe_path = jp(
-                    data_path,
-                    self.id,
-                    "recipes",
-                    i.recipe_type,
-                    f"{key}.json",
-                )
-                recipe = i.generate(self)
-                write_to_file(new_recipe_path, recipe)
-
-            ### EVERYTHING IS DONE -> COPY CACHE TO MDK
-
-            log(DEBUG, "Done generating, copying to MDK")
-            copy_start = time.time()
-
-            log(DEBUG, "Cleaning MDK")
-            shutil.rmtree(resource_path)
-
-            log(DEBUG, "Copying cache content to MDK")
-            # shutil.copytree(final_cache_path, resource_path)
-            fast_copytree(final_cache_path, resource_path)
-
-            log(DEBUG, "Dealing with replace/overwrite files (Defined by plugin)")
-            # Deal with overwrites
-            overwrite_file_path = jp(replace_files, "overwrite.json")
-            if os.path.exists(overwrite_file_path):
-                overwrite_data = json.loads(get_file_contents(overwrite_file_path))
-                for action, overwrites in overwrite_data.items():
-                    if action == "java_path":
-                        action_path = java_path
-                    elif action == "surface":
-                        action_path = path
-                    elif action == "resources":
-                        action_path = resource_path
+                    if texture.__contains__(":"):
+                        log(
+                            INFO,
+                            f"{unique_name} Texture {texture} not found. It will be assumed it exists elsewhere undefined.",
+                        )
                     else:
                         log(
-                            FATAL,
-                            f"Unknown action path '{action}' in {overwrite_file_path}",
+                            WARNING,
+                            f"{unique_name} Texture {texture} not found. ({jp(texture_path) + '.png'})",
                         )
-                    for overwrite in overwrites:
-                        file = jp(replace_files, overwrite["file"])
-                        if not os.path.exists(file):
-                            log(FATAL, f"Overwrite file {file} does not exist")
-                        offset = overwrite["offset"]
-                        file_contents = get_file_contents(file)
-                        rename = overwrite.get("rename")
 
-                        if overwrite["format"]:
-                            file_contents = format_text(file_contents, self)
+        performance_handler(
+            unique_name,
+            "Textures",
+            "Copying gathered textures (%s)" % len(texture_jobs),
+            None,
+        )
 
-                        write_file_path = jp(
-                            action_path,
-                            offset,
-                            (
-                                format_text(rename, self)
-                                if rename
-                                else os.path.basename(file)
-                            ),
-                        )
-                        write_to_file(write_file_path, file_contents)
+        for target_png, png_final_path in texture_jobs:
+            shutil.copyfile(target_png, png_final_path)
 
-            log(DEBUG, "Writing server file (Entry point) to MDK")
+        performance_handler(
+            unique_name,
+            "Loot Tables",
+            "Writing Loot Tables to cache (%s)" % len(actions["internal_loot_tables"]),
+            None,
+        )
 
-            server_file_path = jp(replace_files, "server.java")
-
-            if not os.path.exists(server_file_path):
-                log(
-                    ERROR,
-                    f"Server file at {server_file_path} does not exist, {skip_message}",
-                )
-                continue
-
-            server_import_file_path = jp(replace_files, "settings.json")
-            if not os.path.exists(server_import_file_path):
-                log(
-                    ERROR,
-                    f"Server config file at {server_import_file_path} does not exist, {skip_message}",
-                )
-                continue
-
-            server_file = get_file_contents(server_file_path)
-            server_import_file = json.loads(get_file_contents(server_import_file_path))
-            # client_file = get_file_contents(client_file_path)
-            pre_imports: list[str] = []
-            pre_setups: list[str] = []
-            # settings.json, you'll figure it out
-            # Alright past me, I did because of your snazzy comment. Still hate you though
-            for x in self.things_added:
-                pre_imports.append(server_import_file[x]["import"])
-                pre_setups.append(server_import_file[x]["setup"])
-
-            imports = format_text("\n".join(pre_imports), self)
-            setups = format_text("\n".join(pre_setups), self)
-
-            server_file = format_text(
-                server_file, self, {"imports": imports, "setups": setups}
+        for loot_table in actions["internal_loot_tables"]:
+            loot_table: LootTable
+            new_loot_table_path = jp(
+                data_path,
+                loot_table.mod_id,
+                "loot_tables",
+                loot_table.context,
+                f"{loot_table.name}.json",
             )
-            # client_file = format_text(client_file, self)
+            if isinstance(loot_table.entries, dict):
+                entries = json.dumps(loot_table.entries)
+            else:
+                entries = loot_table.entries
+            write_to_file(new_loot_table_path, entries)
 
-            write_to_file(jp(java_path, f"{self.id.title()}.java"), server_file)
-            # write_to_file(jp(java_path, f"ClientEvents.java"), client_file)
+        performance_handler(
+            unique_name,
+            "Loot Tables",
+            "Writing Tags to cache (%s)" % tag_manager.tags,
+            None,
+        )
 
-            del server_file
+        for path, values in tag_manager.tags.items():
+            tag_path = jp(data_path, id, "tags", path + ".json")
+            thing: dict[str, list[str] | bool] = {
+                "values": [add_mod_id_if_missing(x, self) for x in values],
+                "replace": False,  # Should this be configureable? Yes. Do I know how to properly do that while providing a clean api? No.
+            }
 
-            end = time.time()
-            entire = end - start
-            copying = end - copy_start
+            write_to_file(tag_path, json.dumps(thing))
+
+        performance_handler(
+            unique_name,
+            "Loot Tables",
+            "Generating Recipes (%s)" % len(actions["recipes"]),
+            None,
+        )
+
+        recipes_jobs_paths = []
+        recipes_jobs_contents = []
+        recipes_jobs_length = 0
+
+        for key, i in actions["recipes"].items():
+            i: Recipe
+            new_recipe_path = jp(
+                data_path,
+                self.id,
+                "recipes",
+                i.recipe_type,
+                f"{key}.json",
+            )
+            recipe = i.generate(self)
+            if recipe:
+                recipes_jobs_paths.append(new_recipe_path)
+                recipes_jobs_contents.append(recipe)
+                recipes_jobs_length += 1
+
+        performance_handler(
+            unique_name,
+            "Loot Tables",
+            "Writing to cache (%s)" % recipes_jobs_length,
+            None,
+        )
+        write_to_files(recipes_jobs_paths, recipes_jobs_contents, recipes_jobs_length)
+
+        ### EVERYTHING IS DONE -> COPY CACHE TO MDK
+
+        performance_handler(unique_name, "Cache", "Clearing MDK", None)
+        fast_rmtree(main_src_path)
+
+        performance_handler(unique_name, "Cache", "Copying cache to MDK", None)
+        # shutil.copytree(final_cache_path, resource_path)
+        fast_copytree(final_cache_path, resource_path)
+
+        overwrite_time = time.perf_counter()
+        total_overwrites = 0
+        # Deal with overwrites
+        overwrite_file_path = jp(replace_files, "overwrite.json")
+        if os.path.exists(overwrite_file_path):
+            overwrite_data = json.loads(get_file_contents(overwrite_file_path))
+            total_overwrites = len(overwrite_data)
+            for action, overwrites in overwrite_data.items():
+                if action == "java_path":
+                    action_path = java_path
+                elif action == "surface":
+                    action_path = main_src_path
+                elif action == "resources":
+                    action_path = resource_path
+                else:
+                    log(
+                        FATAL,
+                        f"{unique_name} Unknown action path '{action}' in {overwrite_file_path}",
+                    )
+                for overwrite in overwrites:
+                    file = jp(replace_files, overwrite["file"])
+                    if not os.path.exists(file):
+                        log(
+                            FATAL, f"{unique_name} Overwrite file {file} does not exist"
+                        )
+                    offset = overwrite["offset"]
+                    file_contents = get_file_contents(file)
+                    rename = overwrite.get("rename")
+
+                    if overwrite["format"]:
+                        file_contents = format_text(file_contents, self, mod_info)
+
+                    write_file_path = jp(
+                        action_path,
+                        offset,
+                        (
+                            format_text(rename, self, mod_info)
+                            if rename
+                            else os.path.basename(file)
+                        ),
+                    )
+                    write_to_file(write_file_path, file_contents)
+
+        performance_handler(
+            unique_name,
+            "Cache",
+            "Dealing with overwrite files (Plugin) (%s)" % total_overwrites,
+            overwrite_time,
+        )
+
+        performance_handler(
+            unique_name, "Cache", "Generating and writing server/entry point", None
+        )
+
+        server_file_path = jp(replace_files, "server.java")
+
+        if not os.path.exists(server_file_path):
             log(
-                INFO,
-                [
-                    f"Finished in {entire} seconds:",
-                    f"> {entire-copying}s generating/managing content",
-                    f"> {copying}s Copying generated/managed content to mdk",
-                ],
+                FATAL,
+                f"{unique_name} Server file at {server_file_path} does not exist, {skip_message}",
             )
 
+        server_import_file_path = jp(replace_files, "settings.json")
+        if not os.path.exists(server_import_file_path):
+            log(
+                FATAL,
+                f"{unique_name} Server config file at {server_import_file_path} does not exist, {skip_message}",
+            )
 
-def format_text(text: str, mod: Mod, additional_replace: dict[str, str] = {}) -> str:
+        server_file = get_file_contents(server_file_path)
+        server_import_file = json.loads(get_file_contents(server_import_file_path))
+        # client_file = get_file_contents(client_file_path)
+        pre_imports: list[str] = []
+        pre_setups: list[str] = []
+        # settings.json, you'll figure it out
+        # Alright past me, I did because of your snazzy comment. Still hate you though
+        for x in things_added:
+            pre_imports.append(server_import_file[x]["import"])
+            pre_setups.append(server_import_file[x]["setup"])
+
+        imports = format_text("\n".join(pre_imports), self, mod_info)
+        setups = format_text("\n".join(pre_setups), self, mod_info)
+
+        server_file = format_text(
+            server_file, self, mod_info, {"imports": imports, "setups": setups}
+        )
+        # client_file = format_text(client_file, self)
+
+        write_to_file(jp(java_path, f"{self.id.title()}.java"), server_file)
+        # write_to_file(jp(java_path, f"ClientEvents.java"), client_file)
+
+        del server_file
+
+        performance_add_end_marker(unique_name)
+
+
+def format_text(
+    text: str, mod: Mod, mod_info: ModInfo, additional_replace: dict[str, str] = {}
+) -> str:
     return replace(
         text,
         combine_dicts(
@@ -2111,8 +2217,8 @@ def format_text(text: str, mod: Mod, additional_replace: dict[str, str] = {}) ->
                     "version": mod.version,
                     "mod_version": mod.version,
                     "homepage": mod.homepage,
-                    "minecraft_version": mod.minecraft_version,
-                    "mod_loader_version": mod.mod_loader_version,
+                    "minecraft_version": mod_info["minecraft_version"],
+                    "mod_loader_version": mod_info["mod_loader_version"],
                 },
                 mod.info_replace,
             ),

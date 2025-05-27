@@ -193,3 +193,7 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+// Tell gradle to not redownload dependencies every 5 god damn seconds
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 365, 'days'
+}

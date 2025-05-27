@@ -1,16 +1,18 @@
 # type: ignore
 # Good luck annotating this future me :D
 import json, os
-from ender_py.shared import (
+from ender_py.internal_shared import (
+    jp,
+    replace,
+)
+from shared import (
     log,
     FATAL,
     ERROR,
     WARNING,
     INFO,
-    get_file_contents,
-    jp,
-    replace,
 )
+from fast_functions import get_file_contents
 from typing import Any, Optional, TypedDict, NoReturn, Union, TypeVar, Type
 
 T = TypeVar("T")

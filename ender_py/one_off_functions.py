@@ -1,15 +1,15 @@
-from .shared import log, ERROR, WARNING, jp
-from typing import Tuple, List, Callable, Iterator
+# from .shared import log, ERROR, WARNING, jp
+from typing import Tuple, List, Callable, Iterator, Optional
 from PIL import Image
 import os
 import json
 import importlib.util
 import sys
+import time
 
-from typing import TYPE_CHECKING
+# from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .shared import texture_type
+from .internal_shared import texture_type, cache
 
 
 def find_closest_color(
@@ -46,6 +46,15 @@ def rgb_to_decimal(r: int, g: int, b: int):
     return (r << 16) | (g << 8) | b
 
 
+def decimal_to_rgb(decimal: int):
+    """Converts decimal to RGB tuple."""
+    r = (decimal >> 16) & 0xFF
+    g = (decimal >> 8) & 0xFF
+    b = decimal & 0xFF
+    return (r, g, b)
+
+
+@cache
 def get_average_color_of_image(png_path: str):
     """Calculates the average color of a PNG image."""
     with Image.open(png_path) as img:
@@ -55,135 +64,6 @@ def get_average_color_of_image(png_path: str):
         avg_g = sum(p[1] for p in pixels) // len(pixels)
         avg_b = sum(p[2] for p in pixels) // len(pixels)
         return (avg_r, avg_g, avg_b)
-
-
-def decimal_to_rgb(decimal: int):
-    """Converts decimal to RGB tuple."""
-    r = (decimal >> 16) & 0xFF
-    g = (decimal >> 8) & 0xFF
-    b = decimal & 0xFF
-    return (r, g, b)
-
-
-def get_closest_map_color(png_path: str, colors: str, fallback: str):
-    with open(colors, "r") as f:
-        color_data = json.load(f)
-
-    new = [decimal_to_rgb(color) for _name, color in color_data.items()]
-    if not os.path.exists(png_path):
-        png_path = fallback
-
-    tmp = find_closest_color(get_average_color_of_image(png_path), new, 255)
-    if tmp is None:
-        return None
-    closest = rgb_to_decimal(*tmp)
-    for color_name, color in color_data.items():
-        if color == closest:
-            return color_name
-    return None
-
-
-def find_file(directory: str, target_file: str):
-    """
-    Search for a file in a directory and its subdirectories.
-
-    Args:
-        directory (str): The path of the directory to search.
-        target_file (str): The name of the file to search for.
-
-    Returns:
-        str: The full path of the file if found, otherwise None.
-    """
-    for root, _, files in os.walk(directory):
-        if target_file in files:
-            return os.path.join(root, target_file)
-    return None
-
-
-def does_texture_have_transparency(texture: str) -> bool:
-    asset_path = jp(os.path.dirname(__file__), "cache", "template", "assets")
-
-    texture_path = find_file(asset_path, (texture.split("/")[-1]) + ".png")
-    if texture_path is None:
-        log(WARNING, f"Texture {texture} not found in {asset_path}")
-        return False
-
-    img = Image.open(texture_path).convert("RGBA")
-    alpha = img.getchannel("A")
-
-    return alpha.has_transparency_data
-
-
-def generate_texture(
-    provided: "texture_type",
-    name: str = "",
-) -> dict[str, str]:
-    convert_to_correct_format: Callable[[str], str] = lambda x: (
-        x if (x and x.__contains__(":")) else "{mod_id}:block/" + x
-    )
-    new: dict[str, str] = {}
-    if isinstance(provided, str):
-        new = {
-            "top": convert_to_correct_format(provided),
-            "bottom": convert_to_correct_format(provided),
-            "north": convert_to_correct_format(provided),
-            "south": convert_to_correct_format(provided),
-            "west": convert_to_correct_format(provided),
-            "east": convert_to_correct_format(provided),
-            "particle": convert_to_correct_format(provided),
-            "side": convert_to_correct_format(provided),
-            "render_type": (
-                "cutout_mipped" if does_texture_have_transparency(provided) else "solid"
-            ),
-        }
-    else:
-        sides = ["north", "south", "west", "east"]
-        all = ["top", "bottom", "particle", "side"] + sides
-        side = provided.get("side")
-        if side:
-            for thing in sides:
-                if thing not in provided:
-                    new[thing] = convert_to_correct_format(side)
-
-        for thing in all:
-            if thing not in new:
-                new[thing] = convert_to_correct_format(
-                    provided.get("north", provided["bottom"])
-                )
-
-        for key, val in provided.items():
-            if key == "render_type":
-                continue
-            new[key] = convert_to_correct_format(str(val))
-
-        new["render_type"] = provided.get(
-            "render_type",
-            (
-                "cutout_mipped"
-                if does_texture_have_transparency(new["bottom"])
-                else "solid"
-            ),
-        )
-    if new["render_type"].__contains__(":"):
-        new["render_type"] = new["render_type"].split(":")[1]
-    types = [
-        "solid",
-        "cutout",
-        "cutout_mipped",
-        "translucent",
-        "cutout_mipped_all",
-        "tripwire",
-    ]
-    if not new["render_type"] in types:
-        log(
-            ERROR,
-            f"Invalid render_type: '{new.get('render_type')}'"
-            + (" in context: " + name if name else ""),
-        )
-
-    new["render_type"] = "minecraft:" + new["render_type"]
-
-    return new
 
 
 def import_module_from_full_path(full_path: str):
@@ -236,3 +116,237 @@ def camel_to_snake(text: str) -> str:
 
 def snake_to_camel(text: str) -> str:
     return "".join(x.title() for x in text.split("_"))
+
+
+import time
+from collections import OrderedDict
+from typing import Optional
+
+# instance -> list of (title, section, timestamp)
+performance: dict[str, list[tuple[str, str, float]]] = OrderedDict()
+
+
+def reset_performance_handler():
+    """Reset the global performance tracking data."""
+    global performance
+    performance = {}
+
+
+def performance_handler(
+    instance: str, title: str, section: str, insert: Optional[float] = None
+):
+    """Record a performance measurement point."""
+    global performance
+    now = insert if insert else time.perf_counter()
+    if instance not in performance:
+        performance[instance] = []
+    performance[instance].append((title, section, now))
+
+
+def get_performance_handler():
+    """Get the current performance data."""
+    global performance
+    return performance
+
+
+def get_color_for_percentage(percentage, max_percentage):
+    """
+    Returns an ANSI color code based on percentage relative to max.
+    Green for low percentages, red for high percentages.
+    """
+    if max_percentage == 0:
+        return "\033[0m"  # Reset color
+
+    # Normalize percentage to 0-1 range
+    ratio = min(1.0, percentage / max_percentage)  # Cap at 1.0
+
+    # Interpolate between green (0, 255, 0) and red (255, 0, 0)
+    red = int(255 * ratio)
+    green = int(255 * (1 - ratio))
+    blue = 0
+
+    # Return RGB ANSI escape code
+    return f"\033[38;2;{red};{green};{blue}m"
+
+
+def get_mixed_color_for_section(
+    global_percentage, local_percentage, max_global, max_local
+):
+    """
+    Returns an ANSI color code based on a mix of global and local percentages.
+    Combines both contributions for a more balanced color representation.
+    """
+    if max_global == 0 and max_local == 0:
+        return "\033[0m"  # Reset color
+
+    # Normalize both percentages to 0-1 range
+    global_ratio = min(1.0, global_percentage / max_global) if max_global > 0 else 0
+    local_ratio = min(1.0, local_percentage / max_local) if max_local > 0 else 0
+
+    # Mix the ratios (60% global, 40% local weight)
+    local_weight = 0.4
+    mixed_ratio = (global_ratio * (1 - local_weight)) + (local_ratio * local_weight)
+
+    # Interpolate between green (0, 255, 0) and red (255, 0, 0)
+    red = int(255 * mixed_ratio)
+    green = int(255 * (1 - mixed_ratio))
+    blue = 0
+
+    # Return RGB ANSI escape code
+    return f"\033[38;2;{red};{green};{blue}m"
+
+
+def print_performance():
+    """Print formatted performance statistics with color coding."""
+    perf = get_performance_handler()
+
+    # Variables to accumulate times for the new info
+    all_instance_total_times = []
+    all_start_times = []
+    all_end_times = []
+
+    for instance, records in perf.items():
+        print(f"{instance}")
+        if not records:
+            print("  No performance data recorded")
+            continue
+        # Calculate actual total time from first to last measurement
+        start_time = records[0][2]
+        end_time = records[-1][2]
+
+        all_start_times.append(start_time)
+        all_end_times.append(end_time)
+
+        # Check if we have an explicit end measurement or use current time
+        # If the last record seems to be still running, use current time
+        actual_total_time = end_time - start_time
+        all_instance_total_times.append(actual_total_time)
+
+        print(f"  Total: {actual_total_time:.4f}s")
+
+        # Check if instance has an end marker
+        has_end_marker = any(section == "END_MARKER" for _, section, _ in records)
+
+        if not has_end_marker:
+            print("  Instance errored (no end marker found)")
+            continue
+
+        grouped: OrderedDict[str, list[tuple[str, float, float]]] = OrderedDict()
+
+        # Group measurements by title and calculate durations
+        for i, (title, section, timestamp) in enumerate(records):
+            if i + 1 < len(records):
+                duration = records[i + 1][2] - timestamp
+                end_ts = records[i + 1][2]
+            else:
+                # For the last record, we can't calculate duration without an end marker
+                # Skip END_MARKER entries as they're just end points
+                if section == "END_MARKER":
+                    continue
+                duration = 0.0  # or use a small default
+                end_ts = timestamp
+                print(
+                    f"  Warning: No end time for final section '{section}' in '{title}'"
+                )
+
+            # Skip END_MARKER entries as they're just markers
+            if section != "END_MARKER":
+                grouped.setdefault(title, []).append((section, duration, end_ts))
+
+        # Calculate statistics for color scaling
+        title_times = {}
+        title_percentages = []
+        all_section_global_percentages = []
+        all_section_local_percentages = []
+
+        for title, entries in grouped.items():
+            title_time = sum(duration for _, duration, _ in entries)
+            title_times[title] = title_time
+            title_percentage = (
+                (title_time / actual_total_time) * 100 if actual_total_time > 0 else 0
+            )
+            title_percentages.append(title_percentage)
+
+            for section, duration, _ in entries:
+                global_percentage = (
+                    (duration / actual_total_time) * 100 if actual_total_time > 0 else 0
+                )
+                local_percentage = (
+                    (duration / title_time) * 100 if title_time > 0 else 0
+                )
+                all_section_global_percentages.append(global_percentage)
+                all_section_local_percentages.append(local_percentage)
+
+        # Get max values for color scaling
+        max_title_percentage = max(title_percentages) if title_percentages else 1
+        max_section_global_percentage = (
+            max(all_section_global_percentages) if all_section_global_percentages else 1
+        )
+        max_section_local_percentage = (
+            max(all_section_local_percentages) if all_section_local_percentages else 1
+        )
+
+        reset_color = "\033[0m"
+
+        # Check for timing inconsistencies
+        total_accounted_time = sum(title_times.values())
+        if (
+            abs(total_accounted_time - actual_total_time) > 0.001
+        ):  # Allow small floating point errors
+            print(
+                f"  Warning: Accounted time ({total_accounted_time:.4f}s) != Total time ({actual_total_time:.4f}s)"
+            )
+            print(f"  This suggests overlapping measurements or missing end markers")
+
+        # Print results
+        for title, entries in grouped.items():
+            title_time = title_times[title]
+            title_percentage = (
+                (title_time / actual_total_time) * 100 if actual_total_time > 0 else 0
+            )
+            title_color = get_color_for_percentage(
+                title_percentage, max_title_percentage
+            )
+            print(
+                f"  > {title_color}{title}{reset_color} ({title_time:.4f}s - {title_percentage:.1f}%)"
+            )
+
+            for section, duration, end_ts in entries:
+                global_percentage = (
+                    (duration / actual_total_time) * 100 if actual_total_time > 0 else 0
+                )
+                local_percentage = (
+                    (duration / title_time) * 100 if title_time > 0 else 0
+                )
+                section_color = get_mixed_color_for_section(
+                    global_percentage,
+                    local_percentage,
+                    max_section_global_percentage,
+                    max_section_local_percentage,
+                )
+                print(
+                    f"    >> {section_color}{section}{reset_color}: {duration:.4f}s "
+                    f"({global_percentage:.1f}% | {local_percentage:.1f}%) "
+                )
+
+    # At the end, print the two requested totals:
+    if all_start_times and all_end_times:
+        overall_start = min(all_start_times)
+        overall_end = max(all_end_times)
+        actual_elapsed_time = overall_end - overall_start
+        single_threaded_total_time = sum(all_instance_total_times)
+
+        print("\nSummary:")
+        print(
+            f"  Total execution time of all instances: {single_threaded_total_time:.4f}s"
+        )
+        print(f"  Total actual elapsed time: {actual_elapsed_time:.4f}s")
+
+
+def performance_add_end_marker(instance: str):
+    """Add an explicit end marker to close any open measurements."""
+    performance_handler(instance, "END", "END_MARKER")
+
+
+# The point is one too far - It shows how long it took until point instead of how long it took from point to next point
+# 00:57 aah sentence building

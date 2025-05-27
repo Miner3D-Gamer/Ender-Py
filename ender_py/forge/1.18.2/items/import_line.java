@@ -1,1 +1,1 @@
-import {internal_mod_id}.items.{item_id_upper}Item;
+import {internal_mod_id}.items.{component_id_upper}Item;
