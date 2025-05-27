@@ -2,6 +2,13 @@
 
 Library in the 'ender_py' folder
 
+Installation/Usage guide:
+- Copy repository to local disk
+- Install any currently supported mdk and make sure you can run it at least once
+- Edit main.py to point to the parent directory of the unpackaged mdk
+- Run main.py to test if generation works fine
+- Make your own creation
+
 ### Development is halted until my other project, 'Procedure Crafter', is working. This side project can generate code in a visual workspace and is crucial for creating custom java code
 
 ## But what version of Minecraft?
