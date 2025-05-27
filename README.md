@@ -22,10 +22,11 @@ Library in the 'ender_py' folder
 ### Features:
 
 - Creative Tabs
-- Blocks (Including block types like doors/stairs)
-- Items (Insluding food)
-- Procedures (Partially)
-- Loot tables (Very partially)
+- Blocks (All types, missing custom hitbox)
+- Items (Including food)
+- Procedures (Partially, json -> java)
+- Loot tables (Loading only)
+- Recipes (All but smithing and brewing)
 
 ### To be added:
 
@@ -34,15 +35,14 @@ Library in the 'ender_py' folder
 - Proper loot table support
 - Procedure support (visual -> json -> java) -> Events
 - Signs
-- Boats
 - Mobs
+- Boats
 - Particles
 - Effects
 - Blockstates (Data components) -> Inventory
 - UI/GUI -> Block/Item/Creature bound ⤴
 - Block entities
 - Hud -> Screen (Unbound)
-- JEI/REI compatibility
 - Throwables/Projectiles
 - Ore generation
 - Custom trees
@@ -81,7 +81,8 @@ Library in the 'ender_py' folder
 - Create
 - Serene Seasons
 - Curious API
-- JEI/REI/MEI
+- JEI/REI/EMI
+- Jade/Waila
 - Farmer's Delight
 - GeckoLib
 - Tinkers' Construct
