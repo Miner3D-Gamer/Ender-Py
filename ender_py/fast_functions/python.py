@@ -72,7 +72,7 @@ def get_closest_map_color(png_path: str, colors: dict[str, int], fallback: str):
         png_path = fallback
 
     tmp = find_closest_color(
-        get_average_color_of_image(png_path), [colors.values()], 255  # type: ignore
+        get_average_color_of_image(png_path), colors.values(), 255  # type: ignore
     )
     if tmp is None:
         return None

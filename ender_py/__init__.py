@@ -1,5 +1,8 @@
 # I really need to break this file up, 2000 lines is too much
 
+## PROBLEMS:
+# >- META-INF gets created twice with the one needed not having its information replaced (and pack.mcdmeta); Is it line 1424-1429?
+
 # Adding to path so internal modules can be imported
 import os, sys
 
@@ -21,6 +24,7 @@ import time
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
+from functools import wraps
 
 main_path = sys.modules["__main__"].__file__
 if main_path:
@@ -230,9 +234,9 @@ def export_mod(mod_class: "Mod") -> dict[str, str | dict[str, Any]]:
 
 
 translations = {
-    "creative_tab": "creative_tab.{internal_mod_id}.{component_id}",
-    "item": "item.{internal_mod_id}.{component_id}",
-    "block": "block.{internal_mod_id}.{component_id}",
+    "creative_tab": "creative_tab.{mod_id}.{component_id}",
+    "item": "item.{mod_id}.{component_id}",
+    "block": "block.{mod_id}.{component_id}",
 }  # THIS IS VERY MUCH IN USE
 
 
@@ -748,7 +752,6 @@ def handle_bundler(
 ) -> tuple[str, dict[str, str], dict[str, str]]:
     # I don't like this function :|
     # It's slow, unreadable, and not very dynamic
-
     if not os.path.exists(paths["bundler"]):
         log(FATAL, f"File {paths['bundler']} does not exist")
         return "", {}, {}
@@ -849,6 +852,7 @@ def handle_bundler(
         replace_info = combine_dicts(
             {
                 "internal_mod_id": mod.internal_id,
+                "mod_id": mod.id,
                 "component_id_upper": component_id.title(),
                 "component_id": component_id,
                 "properties": properties,
@@ -909,7 +913,7 @@ def handle_bundler(
 def assemble_pack(
     resource_path: str,
     template_path: str,
-    pack_path: str,
+    final_cache_path: str,
     mod_id: str,
     mod: "Mod",
     mod_info: "ModInfo",
@@ -932,13 +936,13 @@ def assemble_pack(
                 FATAL,
                 f"Required file {path} does not exist (Declared in {required_file})",
             )
-        os.makedirs(jp(pack_path, os.path.dirname(file)), exist_ok=True)
+        os.makedirs(jp(final_cache_path, os.path.dirname(file)), exist_ok=True)
         file_contents = get_file_contents(jp(template_path, file))
 
         if format:
             file_contents = format_text(file_contents, mod, mod_info, info_replace)
 
-        write_to_file(jp(pack_path, file), file_contents)
+        write_to_file(jp(final_cache_path, file), file_contents)
 
 
 from urllib.parse import urlparse
@@ -967,6 +971,7 @@ if is_library_installed("tge"):
 else:
 
     def do_nothing(func: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             return func(*args, **kwargs)
 
@@ -1157,16 +1162,13 @@ class Mod:
             if isinstance(component, Item):
                 sorted["item_textures"].append(component.texture)
                 sorted["item_models"].append(Model(component_id, None, True))
-                sorted["language"].update(({component_id: component.name}))
                 sorted["items"].update({component_id: component})
             elif isinstance(component, CreativeTab):
                 sorted["creative_tabs"].update({component_id: component})
             elif isinstance(component, Block):
                 sorted["block_textures"].append(component.texture)
                 sorted["block_models"].append(Model(component_id, None))
-                sorted["language"].update(({component_id: component.name}))
                 sorted["blocks"].update({component_id: component})
-                # actions["items"]
             elif isinstance(component, Procedure):
                 sorted["procedures"].update({component_id: component})
             elif isinstance(component, Recipe):
@@ -1186,7 +1188,10 @@ class Mod:
 
     @profile
     def generate(
-        self, minify: bool = True, _language_update_file: Unused = None
+        self,
+        minify: bool = True,
+        multithreading: bool = True,
+        _language_update_file: Unused = None,
     ) -> None:
 
         self.minify = minify
@@ -1197,7 +1202,6 @@ class Mod:
         fast_rmtree(common_cache)
 
         # log(DEBUG, "Iterating through available paths")
-        multithreading = True
         if multithreading:
             with ThreadPoolExecutor() as executor:
                 executor.map(
@@ -1329,6 +1333,12 @@ class Mod:
         final_cache_path = jp(common_cache, unique_name, "final")
         template_cache_path = jp(common_cache, unique_name, "template")
 
+        code_java_cache_path = os.path.join(final_cache_path, "code", "java")
+
+        pack_path = os.path.join(final_cache_path, "packs")
+        resource_pack_path = os.path.join(pack_path, "assets", self.id)
+        data_pack_path = os.path.join(pack_path, "data")
+
         ###
 
         info_path = jp(
@@ -1356,11 +1366,12 @@ class Mod:
             "Assembling cache data/resource packs (%s)" % len(self.external_packs),
             None,
         )
+        del final_cache_path
 
         assemble_pack(
             resource_path,
             template_cache_path,
-            final_cache_path,
+            pack_path,
             self.id,
             self,
             mod_info,
@@ -1377,8 +1388,6 @@ class Mod:
         for pack in self.external_packs:
             copy_and_rename_builtin(pack, template_cache_path, self.id)
 
-        os.makedirs(final_cache_path, exist_ok=True)
-
         performance_handler(
             unique_name, "Header", "Setting up datapack/resourcepack", None
         )
@@ -1391,14 +1400,7 @@ class Mod:
 
         # del resource_path, mdk_path, mdk_src_main
 
-        code_java_cache_path = os.path.join(final_cache_path, "code", "java")
-
-        pack_path = os.path.join(final_cache_path, "packs")
-        resource_pack_path = os.path.join(pack_path, "assets", self.id)
-        data_pack_path = os.path.join(pack_path, "data")
-
         # pack.mcmeta
-        os.makedirs(jp(pack_path, "META-INF"), exist_ok=True)
 
         pack = get_file_contents(jp(this, "pack.mcmeta"))
         versions = json.loads(get_file_contents(jp(this, "versions.json")))
@@ -1409,19 +1411,19 @@ class Mod:
                 % mod_info["minecraft_version"]
             )
 
-        pack = replace(
-            pack,
-            {
-                "version": str(pack_version),
-            },
-        )
+        # pack = replace(
+        #     pack,
+        #     {
+        #         "version": str(pack_version),
+        #     },
+        # )
 
-        write_to_file(jp(pack_path, "pack.mcmeta"), pack)
+        # write_to_file(jp(pack_path, "pack.mcmeta"), pack)
 
-        # mods.toml
-        pack = get_file_contents(jp(this, "mods.toml"))
+        # # mods.toml
+        # pack = get_file_contents(jp(this, "mods.toml"))
 
-        write_to_file(jp(pack_path, "META-INF/mods.toml"), pack)
+        # write_to_file(jp(pack_path, "META-INF/mods.toml"), pack)
 
         ### Actual Mod stuff
         if not os.path.exists(code_java_cache_path):
@@ -1434,6 +1436,7 @@ class Mod:
             pass
             # performance_handler(unique_name, "Blocks", "Skipping blocks", None)
         else:
+            things_added.append("blocks")
             performance_handler(
                 unique_name,
                 "Blocks",
@@ -1474,6 +1477,7 @@ class Mod:
             )
             actions["items"].update(block_items)
             actions["internal_loot_tables"].extend(block_loot_tables)
+            print("|>", block_translations)
             actions["language"].update(block_translations)
             del block_items, block_loot_tables, block_translations
 
@@ -1663,7 +1667,7 @@ class Mod:
         block_model_path = jp(resource_pack_path, "models/block")
         if not os.path.exists(block_model_path):
             os.makedirs(block_model_path)
-        blockstate_model_path = jp(final_cache_path, "assets", self.id, "blockstates")
+        blockstate_model_path = jp(pack_path, "assets", self.id, "blockstates")
         if not os.path.exists(blockstate_model_path):
             os.makedirs(blockstate_model_path)
 
@@ -1858,8 +1862,7 @@ class Mod:
                             },
                         ).replace(":", "/models/")
                         block_model_output_path = (
-                            jp(final_cache_path, "assets", block_model_output_path)
-                            + ".json"
+                            jp(pack_path, "assets", block_model_output_path) + ".json"
                         )
                         if not os.path.exists(block_model_output_path):
                             if item.block_item_type is None:
