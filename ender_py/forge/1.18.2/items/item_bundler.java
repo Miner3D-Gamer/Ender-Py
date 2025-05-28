@@ -11,18 +11,9 @@ import net.minecraftforge.registries.RegistryObject;
 {component_imports}
 
 public class ModItems{
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, Bobstruction.MOD_ID);
+    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, {mod_id_upper}.MOD_ID);
     {components}
-    //public static final RegistryObject<Item> TEST_DOOR = ITEMS.register("test_item", ()-> new Item(new Item.Properties().tab(CreativeModeTab.TAB_MISC)));
-
-
     public static void register(IEventBus eventBus){
         ITEMS.register(eventBus);
     }
 }
-
-
-
-
-
-

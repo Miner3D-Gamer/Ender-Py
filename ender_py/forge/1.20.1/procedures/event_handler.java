@@ -1,4 +1,4 @@
-package com.miner.{mod_id};
+package {internal_mod_id};
 
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;

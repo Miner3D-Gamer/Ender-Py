@@ -8,9 +8,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-
 {component_imports}
-
 
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS =
@@ -21,8 +19,6 @@ public class ModItems {
     private static RegistryObject<Item> blockItem(RegistryObject<Block> block) {
 		return ITEMS.register(block.getId().getPath(), () -> new BlockItem(block.get(), new Item.Properties()));
 	}
-
-
     public  static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

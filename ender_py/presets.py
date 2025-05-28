@@ -109,8 +109,8 @@ T = TypeVar("T")
 class WoodSetTextures(TypedDict):
     log_side: str | None
     log_end: str | None
-    log_side_stripped: str | None
-    log_end_stripped: str | None
+    stripped_log_side: str | None
+    stripped_log_end: str | None
     planks: str | None
     leaves: str | None
     door_top: str | None
@@ -149,18 +149,20 @@ def wood_set(
     if isinstance(names, dict):
         naming.update(names)
 
-    def helper(required_textures: list[str], name: str):
+    def helper(required_textures: list[str], helper_name: str):
 
-        if all([textures.get(x) for x in required_textures]) and naming.get(name):
+        if all([textures.get(x) for x in required_textures]) and naming.get(
+            helper_name
+        ):
             create_block = True
         else:
             create_block = False
         if create_block:
-            block_name = naming[name] % name
+            block_name = default[helper_name] % name
             block_id = camel_to_snake(block_name)
         else:
             block_name = ""
-            block_id = default[name] % name
+            block_id = default[helper_name] % name
 
         return create_block, block_name, block_id
 

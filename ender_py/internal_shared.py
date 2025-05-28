@@ -203,3 +203,91 @@ def import_class(obj: Type[Any], data: dict[str, Any]) -> Any:
         setattr(new_instance, key, value)
 
     return new_instance
+
+
+def java_minifier(stuff: str) -> str:
+    content = list(stuff)
+
+    s = "abcdefghijklmnopqrstuvwxyz1234567890"
+    n = "1234567890"
+
+    inside_string = False
+    inside_comment = False
+    inside_multi_line_comment = False
+
+    def discard(previously: str, now: str, future: str):
+        nonlocal inside_string, inside_comment, inside_multi_line_comment  # Nonlocal is one of pythons best keywords frfr
+        # Multicomments do not break the whole thing when minified so I won't remove them :)
+
+        # # A multi comment starts outside of a normal comment and outside a string using /*
+        # if now == "/" and future == "*" and not inside_comment and not inside_string:
+        #     inside_multi_line_comment = True
+        #     return True
+
+        # # A multi comment ends with */ but the return True should not be triggered when inside comments
+        # if now == "/" and previously == "*" and not inside_comment:
+        #     inside_multi_line_comment = False
+        #     return True
+
+        # # Are multiblocks handled? Then let's skip their content
+        # if inside_multi_line_comment:
+        #     return True
+
+        # Normal comments and at a line break
+        if inside_comment and now == "\n":
+            inside_comment = False
+            return True
+
+        # Otherwise, skip their content
+        if inside_comment:
+            return True
+
+        # If we're inside a string we can write comments all we want
+        if now == '"':
+            if not previously == "\\":
+                inside_string = not inside_string
+
+        # Do not delete stuff inside strings!
+        if inside_string:
+            return False
+
+        # Indicated by //, a comment is signalized
+        if now == "/" and future == "/":
+            inside_comment = True
+            return True
+
+        # New lines are optional
+        if now == "\n":
+            return True
+
+        # If the current character isn't empty, we need it
+        if now != " ":
+            return False
+
+        # Discard space between numbers
+        if previously in n and future in n:
+            return True
+
+        # Never discard a space between a letter and another letter/number
+        if previously.lower() in s and future.lower() in s:
+            return False
+
+        return True
+
+    moves = len(content) - 3
+
+    offset = 0
+
+    for i in range(1, moves):
+        i -= offset
+        previously, now, future = content[i - 1 : i + 2]
+        d = discard(previously, now, future)
+        if d:
+            # print("|%s|%s|%s|" % (previously, now.replace("\n", "\\n"), future))
+            content.pop(i)
+            offset += 1
+
+    if content[-1] != '"':
+        if content[-2] in " \n":
+            content.pop(-2)
+    return "".join(content)

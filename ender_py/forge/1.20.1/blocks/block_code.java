@@ -7,9 +7,9 @@ import net.minecraft.world.level.block.Block;
 
 {imports}
 
-public class {component_id_upper}Block extends {block_type}Block {
+public class {component_file_id}Block extends {block_type}Block {
     {additional_code_before}
-    public {component_id_upper}Block()  {
+    public {component_file_id}Block()  {
         super({before}BlockBehaviour.Properties.of(){properties}{after});
         {additional_code_after}
     }

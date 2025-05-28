@@ -1,4 +1,4 @@
-package com.miner.{mod_id};
+package {internal_mod_id};
 
 //import com.mojang.logging.LogUtils;
 
