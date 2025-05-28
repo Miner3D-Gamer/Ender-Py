@@ -16,7 +16,7 @@ extra = [
     "/bobstruct",
     "/ender_py/cache",
     "stats.txt",
-    "/ender_rust/target",
+    "/ender_py/ender_rust/target",
 ]
 
 with open(".gitignore", "w") as f:

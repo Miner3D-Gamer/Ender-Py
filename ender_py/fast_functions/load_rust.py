@@ -3,8 +3,7 @@ import os
 import platform
 
 
-def get_lib():
-    name = "ender_rust"
+def get_lib(name: str, search_path: str):
     if platform.system() == "Windows":
         libname = "%s.dll" % name
     elif platform.system() == "Darwin":
@@ -12,7 +11,7 @@ def get_lib():
     else:
         libname = "lib%s.so" % name
 
-    path = find_file(os.getcwd(), libname)
+    path = find_file(search_path, libname)
     if path is None:
         return None
 
