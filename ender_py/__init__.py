@@ -1477,7 +1477,6 @@ class Mod:
             )
             actions["items"].update(block_items)
             actions["internal_loot_tables"].extend(block_loot_tables)
-            print("|>", block_translations)
             actions["language"].update(block_translations)
             del block_items, block_loot_tables, block_translations
 
@@ -1814,7 +1813,9 @@ class Mod:
         # Item models
 
         item_model_path = jp(resource_pack_path, "models/item")
-        item_model_jobs = []
+        item_model_job_paths = []
+        item_model_job_contents = []
+        item_model_job_length = 0
 
         for item_id, item in actions["items"].items():
             item_id: str
@@ -1916,9 +1917,9 @@ class Mod:
                                 ),
                                 combine_dicts(item.block_item_textures, {"mod_id": display_item_mod_id}),  # type: ignore
                             )
-                            item_model_jobs.append(
-                                (block_model_output_path, item_model_data)
-                            )
+                            item_model_job_paths.append(block_model_output_path)
+                            item_model_job_contents.append(item_model_data)
+                            item_model_job_length += 1
 
                     if not os.path.exists(item_model):
                         item_model = jp(
@@ -1948,18 +1949,21 @@ class Mod:
             )
 
             model_path = jp(item_model_path, f"{item_id}.json")
-            item_model_jobs.append((model_path, model_data))
+            item_model_job_paths.append(model_path)
+            item_model_job_contents.append(model_data)
+            item_model_job_length += 1
             del model_data, model_path, item
 
         performance_handler(
             unique_name,
             "Models",
-            "Writing (block) item models (%s)" % len(item_model_jobs),
+            "Writing (block) item models (%s)" % item_model_job_length,
             None,
         )
-        for path, model in item_model_jobs:
-            write_to_file(block_model_output_path, item_model_data)
 
+        write_to_files(
+            item_model_job_paths, item_model_job_contents, item_model_job_length
+        )
         performance_handler(
             unique_name,
             "Blockstates",
