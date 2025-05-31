@@ -91,7 +91,7 @@ def write_to_file(path: str, text: str):
 
 def write_to_files(paths: list[str], contents: list[str], _total_length: int):
     with ThreadPoolExecutor() as executor:
-        executor.map(write_to_files, paths, contents)
+        executor.map(write_to_file, paths, contents)
 
 
 def copy_and_rename_builtin(
