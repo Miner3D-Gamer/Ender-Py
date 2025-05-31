@@ -40,9 +40,9 @@ mod.add_component(
     id="creative_tab",
 )
 
-procedure = "ender_py/default_procedures/strip_log.json"
-procedure.replace("{log}", ender_py.add_mod_id_if_missing("test_log", mod))
-procedure.replace(
+procedure = ender_py.get_file_contents("ender_py/default_procedures/strip_log.json")
+procedure = procedure.replace("{log}", ender_py.add_mod_id_if_missing("test_log", mod))
+procedure = procedure.replace(
     "{stripped_log}", ender_py.add_mod_id_if_missing("stripped_test_log", mod)
 )
 mod.add_component(
