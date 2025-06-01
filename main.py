@@ -1,5 +1,6 @@
 import ender_py
 
+# Create new mod instance
 mod = ender_py.Mod(
     internal_id="com.author.example_mod",
     public_id="some_mod",
@@ -12,6 +13,7 @@ mod = ender_py.Mod(
     external_packs=["./external_resources"],
 )
 
+# Use a template to quickly generate some blocks
 block_set = ender_py.presets.wood_set(
     name="Test",
     textures=ender_py.presets.WoodSetTextures(
@@ -32,7 +34,10 @@ block_set = ender_py.presets.wood_set(
     flammability=1,
 )
 
+# Actuall add the blocks to the mod
 mod.add_components(block_set)
+
+# Add a creative tab to hold the blocks
 mod.add_component(
     component=ender_py.components.CreativeTab(
         name="Custom Tab", icon_item="minecraft:diamond", items=block_set
@@ -40,11 +45,18 @@ mod.add_component(
     id="creative_tab",
 )
 
-procedure = ender_py.get_file_contents("ender_py/default_procedures/strip_log.json")
+# Load a default procedure
+procedure = ender_py.fast_functions.get_file_contents(
+    "ender_py/default_procedures/strip_log.json"
+)
+
+# Replace placeholders
 procedure = procedure.replace("{log}", ender_py.add_mod_id_if_missing("test_log", mod))
 procedure = procedure.replace(
     "{stripped_log}", ender_py.add_mod_id_if_missing("stripped_test_log", mod)
 )
+
+# Add the procedure under the Block Right Click event
 mod.add_component(
     component=ender_py.components.Procedure(
         event="block_right_click",
@@ -53,36 +65,13 @@ mod.add_component(
     id="strip_wood",
 )
 
+# Convert the mod to a string (json)
+file_name = "mod.json"
+with open(file_name, "w", encoding="utf-8") as f:
+    f.write(mod.export(indent=4, include_external_packs=True))
 
-mod.generate(minify=False)
+# Import the mod by inputting the file path, file content, or unseralized json
+new_mod = ender_py.Mod.import_mod(file_name, mod.mdk_paths)
 
-# out = ender_py.export_mod(bobstruction)
-# with open("mod1.json", "w") as f:
-#     json.dump(out, f, indent=4, default=ender_py.shared.dynamic_serializer)
-# some = ender_py.import_mod(out, "../mods/all")
-# out = ender_py.export_mod(some)
-# with open("mod2.json", "w") as f:
-#     json.dump(out, f, indent=4, default=ender_py.shared.dynamic_serializer)
-
-
-# bobstruction.add_component(
-#     id="bobstruction",
-#     component=ender_py.CreativeTab(
-#         name="Bobstruction",
-#         icon_item="minecraft:diamond",
-#         items=list(set),
-#         hide_title=False,
-#         no_scrollbar=False,
-#         alignment_right=False,
-#     ),
-# )
-
-
-# bobstruction.add_component(
-#     id="test_item_i_believe", component=ender_py.Item(name="Test Item", texture="sapphire")
-# )
-# print(str(bobstruction.export()))
-# import json
-# with open("mod2.json", "w") as f:
-#     json.dump(ender_py.export_mod(bobstruction), f, indent=4)
-# print(ender_py.import_mod(ender_py.export_mod(bobstruction), "../mods/forge"))
+# Use the added components to generate the mod(s)
+new_mod.generate()

@@ -1,16 +1,7 @@
-from typing import (
-    Optional,
-    TypeAlias,
-    Union,
-    Literal,
-    cast,
-    Iterable,
-    Any,
-    TypedDict,
-)
+from typing import Optional, TypeAlias, Union, Literal, cast, Iterable, Any, TypedDict
 from fast_functions import get_file_contents
-
 from typing import TYPE_CHECKING
+import os, json
 
 from shared import (
     log,
@@ -24,14 +15,12 @@ if TYPE_CHECKING:
 
 from .internal_shared import (
     export_class,
-    # ERROR,
-    # WARNING,
-    # INFO,
     add_mod_id_if_missing,
     texture_type,
     generate_texture,
+    ObjectWithSlots,
+    dynamic_serializer,
 )
-import os, json
 
 
 Unused: TypeAlias = None
@@ -86,10 +75,16 @@ class Recipe:
             "This class is a template to be used by other classes that inherit from it"
         )
 
+    def __repr__(self) -> str:
+        return repr(self)
+
 
 class RecipeItemTag:
     def __init__(self, tag: str) -> None:
         self.tag = tag
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 class RecipeCrafting(Recipe):
@@ -158,6 +153,9 @@ class RecipeCrafting(Recipe):
         default["key"] = keys
         return json.dumps(default, indent=4)
 
+    def __repr__(self) -> str:
+        return repr(self)
+
 
 RECIPE_BOOK_CATEGORIES_CRAFTING: TypeAlias = Literal[
     "building", "redstone", "misc", "equipment"
@@ -215,6 +213,9 @@ class RecipeCraftingShapeless(Recipe):
 
         return json.dumps(default, indent=4)
 
+    def __repr__(self) -> str:
+        return repr(self)
+
 
 class RecipeStoneCutter(Recipe):
     __slots__ = [
@@ -256,6 +257,9 @@ class RecipeStoneCutter(Recipe):
             }
 
         return json.dumps(default, indent=4)
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 SMELT_TYPE: TypeAlias = Literal[
@@ -327,6 +331,9 @@ class RecipeMelt(Recipe):
         default["cookingtime"] = {"item": self.cooking_time}
 
         return json.dumps(default, indent=4)
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 class Item:
@@ -404,6 +411,35 @@ class Item:
         self.always_edible = always_edible
         self.display_item = display_item
 
+    def __repr__(self) -> str:
+        return repr(self)
+
+
+def repr(self: ObjectWithSlots) -> str:
+    return_value: dict[str, str] = {}
+    for key in self.__slots__:
+        if getattr(self, key) is not None:
+            return_value[key] = getattr(self, key)
+    return f"{self.__class__.__name__}({json.dumps(return_value, indent=4, default=dynamic_serializer)})"
+
+
+# def repr(self: object) -> str:
+#     return_value: dict[str, str] = {}
+
+#     for cls in self.__class__.__mro__:
+#         if "__slots__" in cls.__dict__:
+#             cls = cast(Type[ObjectWithSlots], cls)
+#             slots = cls.__slots__
+#             if isinstance(slots, str):
+#                 slots = (slots,)
+#             for key in slots:
+#                 if hasattr(self, key):
+#                     value = getattr(self, key)
+#                     if value is not None:
+#                         return_value[key] = repr(value)
+
+#     return f"{self.__class__.__name__}({return_value})"
+
 
 class CreativeTab:
     __slots__ = [
@@ -446,6 +482,9 @@ class CreativeTab:
             new_items = [x for x in items]
 
         self.items = new_items
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 ROTATION: TypeAlias = Literal[
@@ -624,6 +663,9 @@ class Block:
         self.pressure_plate_activation = pressure_plate_activation
         self.procedures = procedures
 
+    def __repr__(self) -> str:
+        return repr(self)
+
 
 class Tag:
     __slots__ = ["name", "replace", "content", "context"]
@@ -634,6 +676,9 @@ class Tag:
         self.replace = replace
         self.content = content
         self.context = context
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 class LootTable:
@@ -648,6 +693,9 @@ class LootTable:
         self.context = context
         self.mod_id = mod_id
         # context: location
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 class Procedure:
@@ -671,18 +719,38 @@ class Procedure:
             new = content
         self.content = new
 
+    def __repr__(self) -> str:
+        return repr(self)
+
 
 class TagManager:
     def __init__(self) -> None:
-        self.tags: dict[str, list[str]] = {}
+        self.tags: dict[str, dict[str, list[str]]] = {}
 
-    def __setitem__(self, key, item):
+    def __setitem__(self, key: str, item: str, mod_id_overwrite: Optional[str] = None):
+        if mod_id_overwrite is None:
+            mod_id_overwrite = ""
 
-        safe = self.tags.get(key, [])
+        safe = self.tags.get(mod_id_overwrite, {}).get(key, [])
         safe.append(item)
-        self.tags[key] = safe
+        self.tags[mod_id_overwrite][key] = safe
+
+    def __repr__(self) -> str:
+        return repr(self)
 
 
 COMPONENT_TYPE: TypeAlias = (
     Item | CreativeTab | Block | Tag | LootTable | Procedure | Recipe
 )
+
+
+class Model:
+    def __init__(
+        self, name: str, model: Optional[str], item: Optional[bool] = None
+    ) -> None:
+        self.name = name
+        self.model = model
+        self.item = item
+
+    def __repr__(self) -> str:
+        return repr(self)

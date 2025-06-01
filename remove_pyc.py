@@ -17,6 +17,7 @@ extra = [
     "/ender_py/cache",
     "stats.txt",
     "/ender_py/ender_rust/target",
+    "mod.json",
 ]
 
 with open(".gitignore", "w") as f:

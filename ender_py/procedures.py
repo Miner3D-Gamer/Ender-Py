@@ -9,7 +9,7 @@ from shared import (
     log,
     FATAL,
     ERROR,
-    WARNING,
+    WARN,
     INFO,
 )
 from fast_functions import get_file_contents
@@ -34,15 +34,11 @@ def get(
             )
         if warn:
             log(
-                WARNING,
+                WARN,
                 f"Key '{key}' not found in '{dictionary if name is None else name}', using default '{default}'",
             )
         return default
     return dictionary[key]
-
-
-def combine_dicts(dict1: dict, dict2: dict) -> dict[str, str]:
-    return {**dict1, **dict2}
 
 
 class Block(TypedDict):

@@ -164,5 +164,27 @@ def get_file_contents(path: str, info: Optional[str] = None) -> str:
             FATAL,
             f"File {path} does not exist" + (" -> Info: %s" % info if info else ""),
         )
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return f.read()
+
+
+def get_byte_contents(path: str, info: Optional[str] = None) -> bytes:
+    if not os.path.exists(path):
+        log(
+            FATAL,
+            f"File {path} does not exist" + (" -> Info: %s" % info if info else ""),
+        )
+    with open(path, "rb") as f:
+        return f.read()
+
+
+__all__ = [
+    "get_file_contents",
+    "get_byte_contents",
+    "copy_and_rename_builtin",
+    "fast_rmtree",
+    "get_closest_map_color",
+    "write_to_file",
+    "write_to_files",
+    "get_average_color_of_image",
+]

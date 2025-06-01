@@ -11,13 +11,13 @@ def get_closest_map_color(
 
     # Prepare targets as an array of RGB structs
     targets = (RGB * len(color_data))()
-    for i, (color_name, (r, g, b)) in enumerate(color_data.items()):
+    for i, (_color_name, (r, g, b)) in enumerate(color_data.items()):
         targets[i].r = r
         targets[i].g = g
         targets[i].b = b
 
     # Call the Rust function
-    idx = ender_rust.average_and_find_closest_color_index(
+    idx: int = ender_rust.average_and_find_closest_color_index(
         png_path.encode("utf-8"),
         targets,
         len(targets),
@@ -87,8 +87,8 @@ def copy_and_rename_builtin(source: str, destination: str, mod_id: str) -> None:
     Raises:
         ValueError: On invalid input or if Rust returns an error.
     """
-    if not all(isinstance(arg, str) for arg in [source, destination, mod_id]):
-        raise ValueError("All arguments must be strings.")
+    # if not all(isinstance(arg, str) for arg in [source, destination, mod_id]):
+    #     raise ValueError("All arguments must be strings.")
 
     result = ender_rust.copy_and_rename_builtin_ffi(
         source.encode("utf-8"), destination.encode("utf-8"), mod_id.encode("utf-8")
@@ -106,3 +106,14 @@ def copy_and_rename_builtin(source: str, destination: str, mod_id: str) -> None:
 
 def fast_rmtree(path: str) -> None:
     ender_rust.delete_path_parallel(path.encode("utf-8"))
+
+
+__all__ = [
+    # "get_file_contents",
+    "copy_and_rename_builtin",
+    "fast_rmtree",
+    "get_closest_map_color",
+    "write_to_file",
+    "write_to_files",
+    # "get_average_color_of_image",
+]

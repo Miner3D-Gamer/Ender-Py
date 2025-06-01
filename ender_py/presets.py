@@ -1,16 +1,13 @@
 from .components import (
     Block,
-    Item,
-    CreativeTab,
     COMPONENT_TYPE,
     RecipeCrafting,
-    Texture,
-    RecipeItemTag,
     ALLOWED_BLOCK_TYPES,
+    ROTATION,
 )
 from .one_off_functions import camel_to_snake
 from .internal_shared import texture_type
-from typing import Any, TypedDict, Optional, TypeVar
+from typing import TypedDict, Optional, TypeVar
 
 
 def brick_set(
@@ -174,12 +171,12 @@ def wood_set(
         name: str,
         block_type: ALLOWED_BLOCK_TYPES,
         default_render_type: str = "solid",
-        rotation=None,
+        rotation: Optional[ROTATION] = None,
         display_item: Optional[str] = None,
     ):
 
         create_block, block_name, block_id = helper([x for x in texture.values()], name)
-        new = {}
+        new: dict[str, str] = {}
         for key, item in texture.items():
             new[key] = texture_get(item)
         new.update(

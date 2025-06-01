@@ -49,3 +49,4 @@ def cache(func: Callable[..., Any]):
 
 
 from .logging import *
+from .image_compression import *

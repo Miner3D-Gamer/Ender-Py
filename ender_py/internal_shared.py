@@ -1,4 +1,4 @@
-from shared import cache, find_file, log, WARNING, ERROR, FATAL
+from shared import cache, find_file, log, WARN, ERROR  # , FATAL
 
 # from .fast_functions.load_rust import get_lib
 
@@ -6,12 +6,10 @@ from shared import cache, find_file, log, WARNING, ERROR, FATAL
 
 
 from typing import (
-    overload,
-    NoReturn,
     Literal,
     Union,
     Any,
-    Optional,
+    TypeVar,
     Protocol,
     runtime_checkable,
     Callable,
@@ -19,12 +17,11 @@ from typing import (
 )
 from PIL import Image
 import os
-import traceback
 import inspect
 from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
-    from . import Mod
+    from .mod_class import Mod
     from .components import Texture
 
 
@@ -44,7 +41,7 @@ def does_texture_have_transparency(texture: str) -> bool:
 
     texture_path = find_file(asset_path, (texture.split("/")[-1]) + ".png")
     if texture_path is None:
-        log(WARNING, f"Texture {texture} not found in {asset_path}")
+        log(WARN, f"Texture {texture} not found in {asset_path}")
         return False
 
     img = Image.open(texture_path).convert("RGBA")
@@ -174,7 +171,7 @@ def export_class(obj: object):
     """Exports an object's attributes as a dictionary."""
     export = {}
     slots = getattr(obj, "__slots__", None)
-    if slots is not None:
+    if not slots is None:
         if isinstance(slots, str):
             export[slots] = getattr(obj, slots, None)
         else:
@@ -182,6 +179,9 @@ def export_class(obj: object):
                 export[slot] = getattr(obj, slot, None)
     else:  # Fallback to __dict__ if __slots__ not defined
         export = obj.__dict__.copy()
+
+    export["__export_class_identifier__"] = obj.__class__.__name__
+
     return export
 
 
@@ -200,6 +200,8 @@ def import_class(obj: Type[Any], data: dict[str, Any]) -> Any:
     new_instance = obj(**init_args)
 
     for key, value in remaining_attrs.items():
+        if key == "__export_class_identifier__":
+            continue
         setattr(new_instance, key, value)
 
     return new_instance
@@ -291,3 +293,26 @@ def java_minifier(stuff: str) -> str:
         if content[-2] in " \n":
             content.pop(-2)
     return "".join(content)
+
+
+A1 = TypeVar("A1")
+A2 = TypeVar("A2")
+B1 = TypeVar("B1")
+B2 = TypeVar("B2")
+
+
+def combine_dicts(
+    dict1: dict[A1, A2], dict2: dict[B1, B2]
+) -> dict[Union[A1, B1], Union[A2, B2]]:
+    return {**dict1, **dict2}
+
+
+from urllib.parse import urlparse
+
+
+def is_valid_url(url: str) -> bool:
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except ValueError:
+        return False

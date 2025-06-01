@@ -1,15 +1,14 @@
 # from .shared import log, ERROR, WARNING, jp
-from typing import Tuple, List, Callable, Iterator, Optional
+from typing import Tuple, List, Iterator, Optional
 from PIL import Image
-import os
-import json
 import importlib.util
 import sys
 import time
+from collections import OrderedDict
 
 # from typing import TYPE_CHECKING
 
-from .internal_shared import texture_type, cache
+from .internal_shared import cache
 
 
 def find_closest_color(
@@ -118,10 +117,6 @@ def snake_to_camel(text: str) -> str:
     return "".join(x.title() for x in text.split("_"))
 
 
-import time
-from collections import OrderedDict
-from typing import Optional
-
 # instance -> list of (title, section, timestamp)
 performance: dict[str, list[tuple[str, str, float]]] = OrderedDict()
 
@@ -149,7 +144,7 @@ def get_performance_handler():
     return performance
 
 
-def get_color_for_percentage(percentage, max_percentage):
+def get_color_for_percentage(percentage: float, max_percentage: float):
     """
     Returns an ANSI color code based on percentage relative to max.
     Green for low percentages, red for high percentages.
@@ -170,7 +165,10 @@ def get_color_for_percentage(percentage, max_percentage):
 
 
 def get_mixed_color_for_section(
-    global_percentage, local_percentage, max_global, max_local
+    global_percentage: float,
+    local_percentage: float,
+    max_global: float,
+    max_local: float,
 ):
     """
     Returns an ANSI color code based on a mix of global and local percentages.
@@ -201,9 +199,9 @@ def print_performance():
     perf = get_performance_handler()
 
     # Variables to accumulate times for the new info
-    all_instance_total_times = []
-    all_start_times = []
-    all_end_times = []
+    all_instance_total_times: list[float] = []
+    all_start_times: list[float] = []
+    all_end_times: list[float] = []
 
     for instance, records in perf.items():
         print(f"{instance}")
@@ -254,10 +252,10 @@ def print_performance():
                 grouped.setdefault(title, []).append((section, duration, end_ts))
 
         # Calculate statistics for color scaling
-        title_times = {}
-        title_percentages = []
-        all_section_global_percentages = []
-        all_section_local_percentages = []
+        title_times: dict[str, float] = {}
+        title_percentages: list[float] = []
+        all_section_global_percentages: list[float] = []
+        all_section_local_percentages: list[float] = []
 
         for title, entries in grouped.items():
             title_time = sum(duration for _, duration, _ in entries)
