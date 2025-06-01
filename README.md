@@ -3,6 +3,7 @@
 Library in the 'ender_py' folder
 
 Installation/Usage guide:
+
 - Copy repository to local disk
 - Install any currently supported mdk and make sure you can run it at least once
 - Edit main.py to point to the parent directory of the unpackaged mdk
@@ -96,3 +97,14 @@ Installation/Usage guide:
 - FTB Quests
 - Quark
 - I like wood
+
+## Final words
+
+This is **not** a magic library that replaces pure Java modding. It's essentially a proof of concept created because working with MCreator is about as effective as asking your cat to fetch your TV remote.
+
+Having said that;
+this project sucks,
+Java causes me physical pain,
+and I have no idea where all these ghost features are come from.
+
+**Nonetheless, it miraculously works!** If you come across any bugs or issues, _please_ hesitate to create an github issue. Your feedback is invaluable.
